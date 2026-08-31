@@ -68,6 +68,8 @@ By default, all datasets are in `~/Data/`. We use [MultiviewX](#multiviewx-datas
 On Kaggle, the dataset classes also automatically discover datasets mounted anywhere under
 `/kaggle/input` or `/kaggle/working`, so the paths in the training scripts do not need to be changed.
 The local `~/Data/` path is still preferred when it exists.
+Generated ground-truth files for read-only datasets under `/kaggle/input` are written to
+`/kaggle/working/mvdet_cache`. Set `MVDET_CACHE_DIR` to use a different cache directory.
 
 Your `~/Data/` folder should look like this
 ```

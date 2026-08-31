@@ -33,7 +33,7 @@ class frameDataset(VisionDataset):
         self.imgs_head_foot_gt = {}
         self.download(frame_range)
 
-        self.gt_fpath = os.path.join(self.root, 'gt.txt')
+        self.gt_fpath = self._get_gt_fpath()
         if not os.path.exists(self.gt_fpath) or force_download:
             self.prepare_gt()
 
@@ -56,6 +56,29 @@ class frameDataset(VisionDataset):
         self.img_kernel[0, 0] = torch.from_numpy(img_kernel)
         self.img_kernel[1, 1] = torch.from_numpy(img_kernel)
         pass
+
+    def _get_gt_fpath(self):
+        cache_root = os.environ.get('MVDET_CACHE_DIR')
+        dataset_root = os.path.abspath(self.root)
+        kaggle_input_root = os.path.abspath('/kaggle/input')
+
+        try:
+            is_kaggle_input = os.path.commonpath(
+                (dataset_root, kaggle_input_root)
+            ) == kaggle_input_root
+        except ValueError:
+            is_kaggle_input = False
+
+        if cache_root is None and is_kaggle_input:
+            cache_root = '/kaggle/working/mvdet_cache'
+        if cache_root is None:
+            return os.path.join(self.root, 'gt.txt')
+
+        dataset_cache = os.path.join(
+            os.path.abspath(os.path.expanduser(cache_root)),
+            self.base.__name__.lower(),
+        )
+        return os.path.join(dataset_cache, 'gt.txt')
 
     def prepare_gt(self):
         og_gt = []
