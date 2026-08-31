@@ -4,6 +4,7 @@ import cv2
 import xml.etree.ElementTree as ET
 import re
 from torchvision.datasets import VisionDataset
+from .path_utils import resolve_dataset_root
 
 intrinsic_camera_matrix_filenames = ['intr_CVLab1.xml', 'intr_CVLab2.xml', 'intr_CVLab3.xml', 'intr_CVLab4.xml',
                                      'intr_IDIAP1.xml', 'intr_IDIAP2.xml', 'intr_IDIAP3.xml']
@@ -13,6 +14,15 @@ extrinsic_camera_matrix_filenames = ['extr_CVLab1.xml', 'extr_CVLab2.xml', 'extr
 
 class Wildtrack(VisionDataset):
     def __init__(self, root):
+        root = resolve_dataset_root(
+            root,
+            'Wildtrack',
+            (
+                'Image_subsets',
+                os.path.join('calibrations', 'intrinsic_zero', intrinsic_camera_matrix_filenames[0]),
+                os.path.join('calibrations', 'extrinsic', extrinsic_camera_matrix_filenames[0]),
+            ),
+        )
         super().__init__(root)
         # WILDTRACK has ij-indexing: H*W=480*1440, so x should be \in [0,480), y \in [0,1440)
         # WILDTRACK has in-consistent unit: centi-meter (cm) for calibration & pos annotation,

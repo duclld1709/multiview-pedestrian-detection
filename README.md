@@ -65,6 +65,10 @@ This code uses the following libraries
 ### Data Preparation
 By default, all datasets are in `~/Data/`. We use [MultiviewX](#multiviewx-dataset) and [Wildtrack](https://www.epfl.ch/labs/cvlab/data/data-wildtrack/) in this project. 
 
+On Kaggle, the dataset classes also automatically discover datasets mounted anywhere under
+`/kaggle/input` or `/kaggle/working`, so the paths in the training scripts do not need to be changed.
+The local `~/Data/` path is still preferred when it exists.
+
 Your `~/Data/` folder should look like this
 ```
 Data

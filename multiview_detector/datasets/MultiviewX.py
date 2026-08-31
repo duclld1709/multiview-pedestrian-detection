@@ -4,6 +4,7 @@ import cv2
 import xml.etree.ElementTree as ET
 import re
 from torchvision.datasets import VisionDataset
+from .path_utils import resolve_dataset_root
 
 intrinsic_camera_matrix_filenames = ['intr_Camera1.xml', 'intr_Camera2.xml', 'intr_Camera3.xml', 'intr_Camera4.xml',
                                      'intr_Camera5.xml', 'intr_Camera6.xml']
@@ -13,6 +14,15 @@ extrinsic_camera_matrix_filenames = ['extr_Camera1.xml', 'extr_Camera2.xml', 'ex
 
 class MultiviewX(VisionDataset):
     def __init__(self, root):
+        root = resolve_dataset_root(
+            root,
+            'MultiviewX',
+            (
+                'Image_subsets',
+                os.path.join('calibrations', 'intrinsic', intrinsic_camera_matrix_filenames[0]),
+                os.path.join('calibrations', 'extrinsic', extrinsic_camera_matrix_filenames[0]),
+            ),
+        )
         super().__init__(root)
         # MultiviewX has xy-indexing: H*W=640*1000, thus x is \in [0,1000), y \in [0,640)
         # MultiviewX has consistent unit: meter (m) for calibration & pos annotation
