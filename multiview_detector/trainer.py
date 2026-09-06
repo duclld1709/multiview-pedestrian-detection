@@ -26,6 +26,8 @@ class PerspectiveTrainer(BaseTrainer):
         self.logdir = logdir
         self.denormalize = denormalize
         self.alpha = alpha
+        self.last_train_metrics = {}
+        self.last_test_metrics = {}
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
@@ -72,7 +74,7 @@ class PerspectiveTrainer(BaseTrainer):
                 print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
                       'prec: {:.1f}%, recall: {:.1f}%, Time: {:.1f} (f{:.3f}+b{:.3f}), maxima: {:.3f}'.format(
                     epoch, (batch_idx + 1), losses / (batch_idx + 1), precision_s.avg * 100, recall_s.avg * 100,
-                    t_epoch, t_forward / batch_idx, t_backward / batch_idx, map_res.max()))
+                    t_epoch, t_forward / (batch_idx + 1), t_backward / (batch_idx + 1), map_res.max()))
                 pass
 
         t1 = time.time()
@@ -80,6 +82,13 @@ class PerspectiveTrainer(BaseTrainer):
         print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
               'Precision: {:.1f}%, Recall: {:.1f}%, Time: {:.3f}'.format(
             epoch, len(data_loader), losses / len(data_loader), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
+
+        self.last_train_metrics = {
+            'loss': losses / len(data_loader),
+            'precision_percent': precision_s.avg * 100,
+            'recall_percent': recall_s.avg * 100,
+            'duration_seconds': t_epoch,
+        }
 
         return losses / len(data_loader), precision_s.avg * 100
 
@@ -144,6 +153,9 @@ class PerspectiveTrainer(BaseTrainer):
             foot_cam_result.save(os.path.join(self.logdir, 'cam1_foot.jpg'))
 
         moda = 0
+        modp = 0
+        detection_precision = 0
+        detection_recall = 0
         if res_fpath is not None:
             all_res_list = torch.cat(all_res_list, dim=0)
             np.savetxt(os.path.abspath(os.path.dirname(res_fpath)) + '/all_res.txt', all_res_list.numpy(), '%.8f')
@@ -156,18 +168,29 @@ class PerspectiveTrainer(BaseTrainer):
             res_list = torch.cat(res_list, dim=0).numpy() if res_list else np.empty([0, 3])
             np.savetxt(res_fpath, res_list, '%d')
 
-            recall, precision, moda, modp = evaluate(os.path.abspath(res_fpath), os.path.abspath(gt_fpath),
-                                                     data_loader.dataset.base.__name__)
+            detection_recall, detection_precision, moda, modp = evaluate(
+                os.path.abspath(res_fpath), os.path.abspath(gt_fpath), data_loader.dataset.base.__name__)
 
             # If you want to use the unofiicial python evaluation tool for convenient purposes.
             # recall, precision, modp, moda = python_eval(os.path.abspath(res_fpath), os.path.abspath(gt_fpath),
             #                                             data_loader.dataset.base.__name__)
 
             print('moda: {:.1f}%, modp: {:.1f}%, precision: {:.1f}%, recall: {:.1f}%'.
-                  format(moda, modp, precision, recall))
+                  format(moda, modp, detection_precision, detection_recall))
 
         print('Test, Loss: {:.6f}, Precision: {:.1f}%, Recall: {:.1f}, \tTime: {:.3f}'.format(
-            losses / (len(data_loader) + 1), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
+            losses / len(data_loader), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
+
+        self.last_test_metrics = {
+            'loss': losses / len(data_loader),
+            'grid_precision_percent': precision_s.avg * 100,
+            'grid_recall_percent': recall_s.avg * 100,
+            'moda_percent': moda,
+            'modp_percent': modp,
+            'detection_precision_percent': detection_precision,
+            'detection_recall_percent': detection_recall,
+            'duration_seconds': t_epoch,
+        }
 
         return losses / len(data_loader), precision_s.avg * 100, moda
 

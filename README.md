@@ -60,6 +60,7 @@ This code uses the following libraries
 - pillow
 - opencv-python
 - kornia
+- wandb & python-dotenv
 - matlab & matlabengine (required for evaluation) (see this [link](/multiview_detector/evaluation/README.md) for detailed guide)
 
 ### Data Preparation
@@ -81,9 +82,14 @@ Data
 ```
 
 ### Training
-In order to train classifiers, please run the following,
+The training entrypoint logs config, train/validation metrics, timings, and GPU usage to
+the `GFA26AI02/baseline-expriments` Weights & Biases project. Put either
+`WANDB_API_KEY=...` (preferred) or `WANDB_API=...` in the repository `.env` file.
+
+Run one command per dataset; each command creates a separate, comparable W&B run:
 ```shell script
 CUDA_VISIBLE_DEVICES=0,1 python main.py -d wildtrack
+CUDA_VISIBLE_DEVICES=0,1 python main.py -d multiviewx
 ``` 
 This should automatically return evaluation results similar to the reported 88.2\% MODA on Wildtrack dataset. 
 
