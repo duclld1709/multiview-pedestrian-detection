@@ -1,0 +1,166 @@
+W&B CONFIGURATION - MVDet
+=========================
+
+1. W&B destination
+------------------
+entity: GFA26AI02
+project: baseline-expriments
+
+One W&B run is created for each execution of main.py. Wildtrack and
+MultiviewX are therefore recorded as separate runs in the same project and
+can be compared on the W&B dashboard.
+
+
+2. Run naming
+-------------
+Default format:
+{dataset}-{variant}-{architecture}-{job_type}-{YYYYMMDD-HHMMSS}
+
+Examples:
+wildtrack-default-resnet18-train-20260907-101530
+multiviewx-default-resnet18-train-20260907-142015
+multiviewx-default-resnet18-inference-20260907-180100
+
+job_type is "train" for a new training run and "inference" when --resume is
+provided. A custom name can be supplied with:
+--wandb_run_name multiviewx-baseline
+
+Run tags:
+- dataset: wildtrack or multiviewx
+- model variant: default, img_proj, res_proj, or no_joint_conv
+- architecture: resnet18 or vgg11
+
+
+3. Authentication and mode
+--------------------------
+The API key is loaded from the environment or the repository .env file.
+Supported environment variable names:
+- WANDB_API_KEY (preferred and used by Kaggle Secrets)
+- WANDB_API (automatically mapped to WANDB_API_KEY)
+
+The secret value is never added to the W&B run config or printed to the
+terminal.
+
+Modes selected with --wandb_mode:
+- online   (default): upload metrics to W&B immediately
+- offline: store the run locally for later synchronization
+- disabled: disable W&B logging
+
+
+4. Config saved in every run
+----------------------------
+Model and dataset:
+- model_name: actual Python model class name
+  + default       -> PerspTransDetector
+  + img_proj      -> ImageProjVariant
+  + res_proj      -> ResProjVariant
+  + no_joint_conv -> NoJointConvVariant
+- model_variant: value of --variant
+- architecture: value of --arch
+- dataset_name: value of --dataset (wildtrack or multiviewx)
+- num_cameras: read from the selected dataset
+- train_samples: calculated from the training split
+- test_samples: calculated from the test split
+- train_ratio: 0.9
+- input_size: [720, 1280]
+- grid_reduce: 4
+- image_reduce: 4
+
+Training hyperparameters:
+- optimizer: SGD
+- scheduler: OneCycleLR
+- learning_rate: value of --lr (default 0.1)
+- momentum: value of --momentum (default 0.5)
+- weight_decay: value of --weight_decay (default 0.0005)
+- batch_size: value of --batch_size (default 1)
+- epochs: value of --epochs (default 10)
+- alpha: value of --alpha (default 1.0)
+- classification_threshold: value of --cls_thres (default 0.4)
+- num_workers: value of --num_workers (default 4)
+- seed: value of --seed (default 1)
+- log_interval: value of --log_interval (default 10)
+- reID: value of --reID (default false)
+- visualize: value of --visualize (default false)
+
+Partial annotation:
+- annotation_drop_rate: null
+
+There is currently no partial-annotation/drop pipeline, so this value is
+deliberately null instead of incorrectly reporting a 0% drop. It should be
+set to the actual ratio when partial annotation is implemented.
+
+Resume and W&B execution metadata:
+- resume / resume_checkpoint: checkpoint timestamp passed with --resume
+- wandb_run_name: custom run name, or null when automatic naming is used
+- wandb_mode: online, offline, or disabled
+
+
+5. Metrics logged by epoch
+--------------------------
+Shared step:
+- epoch
+
+Training namespace (train/*):
+- train/loss
+- train/precision_percent
+- train/recall_percent
+- train/duration_seconds
+- train/learning_rate
+
+Validation namespace (validation/*):
+- validation/loss
+- validation/grid_precision_percent
+- validation/grid_recall_percent
+- validation/moda_percent
+- validation/modp_percent
+- validation/detection_precision_percent
+- validation/detection_recall_percent
+- validation/duration_seconds
+
+The validation set is evaluated at epoch 0 before training and after every
+training epoch.
+
+Final inference namespace (final_test/*):
+- final_test/loss
+- final_test/grid_precision_percent
+- final_test/grid_recall_percent
+- final_test/moda_percent
+- final_test/modp_percent
+- final_test/detection_precision_percent
+- final_test/detection_recall_percent
+- final_test/duration_seconds
+
+GPU namespace (gpu/*), for every visible GPU index N:
+- gpu/available
+- gpu/device_count
+- gpu/N/utilization_percent (when NVML is available)
+- gpu/N/memory_allocated_mb
+- gpu/N/memory_reserved_mb
+- gpu/N/max_memory_allocated_mb
+- gpu/N/memory_allocated_percent
+
+W&B also collects its standard system metrics in online/offline modes.
+
+
+6. Terminal output
+------------------
+At the end of each train, validation, or final-test phase, main.py prints a
+summary containing:
+- phase and epoch
+- loss and task metrics
+- elapsed time in seconds
+- utilization and allocated memory for each visible GPU
+
+
+7. Kaggle commands
+------------------
+Wildtrack:
+CUDA_VISIBLE_DEVICES=0,1 python main.py -d wildtrack --epochs 10 \
+  --batch_size 1 --wandb_run_name wildtrack-baseline
+
+MultiviewX:
+CUDA_VISIBLE_DEVICES=0,1 python main.py -d multiviewx --epochs 10 \
+  --batch_size 1 --wandb_run_name multiviewx-baseline
+
+The current models reference cuda:0 and cuda:1, so the Kaggle accelerator
+must provide two GPUs (for example, GPU T4 x2).
