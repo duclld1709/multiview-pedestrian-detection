@@ -155,14 +155,21 @@ def main(args):
     normalize = T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     denormalize = img_color_denormalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     train_trans = T.Compose([T.Resize([720, 1280]), T.ToTensor(), normalize, ])
-    if 'wildtrack' in args.dataset:
+    if args.data_path:
+        args.dataset, data_path = detect_dataset_root(args.data_path)
+        args.data_path = data_path
+        print(f'Detected {args.dataset} dataset at {data_path}')
+    elif args.dataset == 'wildtrack':
         data_path = os.path.expanduser('~/Data/Wildtrack')
-        base = Wildtrack(data_path)
-    elif 'multiviewx' in args.dataset:
+    elif args.dataset == 'multiviewx':
         data_path = os.path.expanduser('~/Data/MultiviewX')
-        base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
+
+    if args.dataset == 'wildtrack':
+        base = Wildtrack(data_path)
+    else:
+        base = MultiviewX(data_path)
     train_set = frameDataset(base, train=True, transform=train_trans, grid_reduce=4)
     test_set = frameDataset(base, train=False, transform=train_trans, grid_reduce=4)
 
@@ -273,6 +280,8 @@ if __name__ == '__main__':
                         choices=['default', 'img_proj', 'res_proj', 'no_joint_conv'])
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18'])
     parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx'])
+    parser.add_argument('--data_path', type=str, default=None,
+                        help='dataset root (or parent directory); automatically detects Wildtrack or MultiviewX')
     parser.add_argument('-j', '--num_workers', type=int, default=4)
     parser.add_argument('-b', '--batch_size', type=int, default=1, metavar='N',
                         help='input batch size for training (default: 1)')

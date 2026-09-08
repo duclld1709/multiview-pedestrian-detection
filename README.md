@@ -91,6 +91,20 @@ Run one command per dataset; each command creates a separate, comparable W&B run
 CUDA_VISIBLE_DEVICES=0,1 python main.py -d wildtrack
 CUDA_VISIBLE_DEVICES=0,1 python main.py -d multiviewx
 ``` 
+
+For a custom dataset copy, including partial annotations on local storage or
+Kaggle, pass its path directly. The dataset type is detected automatically, so
+`-d` is not required:
+
+```shell script
+CUDA_VISIBLE_DEVICES=0,1 python main.py --data_path /path/to/partial-multiviewx
+CUDA_VISIBLE_DEVICES=0,1 python main.py --data_path /kaggle/input/partial-wildtrack
+```
+
+`--data_path` may point to the dataset root or a parent directory containing
+one supported dataset. Kaggle inputs remain read-only; generated `gt.txt` is
+stored under `/kaggle/working/mvdet_cache` as before.
+
 This should automatically return evaluation results similar to the reported 88.2\% MODA on Wildtrack dataset. 
 
 ### Pre-trained models
