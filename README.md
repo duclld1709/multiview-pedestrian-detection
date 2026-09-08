@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Multiview Detection with Feature Perspective Transformation [[Website](https://hou-yz.github.io/publication/2020-eccv2020-mvdet)] [[arXiv](https://arxiv.org/abs/2007.07247)]
 
 ```
@@ -109,3 +110,6 @@ This should automatically return evaluation results similar to the reported 88.2
 
 ### Pre-trained models
 You can download the checkpoints at this [link](https://1drv.ms/u/s!AtzsQybTubHfhNRE9Iy8IjsGMXB17A?e=CCqhIQ).
+=======
+# multiview-pedestrian-detection
+>>>>>>> mdp/anh_mvdet
