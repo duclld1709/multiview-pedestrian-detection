@@ -21,10 +21,10 @@ class BaseTrainer(object):
 
 
 class PerspectiveTrainer(BaseTrainer):
-    def __init__(self, model, logdir, cls_thres=0.4, alpha=1.0, use_mse=False, id_ratio=0):
+    def __init__(self, model, logdir, cls_thres=0.4, alpha=1.0, heatmap_loss='focal', id_ratio=0,
+                 confuse_pred_thr=0.3, confuse_beta=0.1, confuse_mirror=True):
         super(BaseTrainer, self).__init__()
         self.model = model
-        self.mse_loss = nn.MSELoss()
         self.focal_loss = FocalLoss()
         self.regress_loss = RegL1Loss()
         self.ce_loss = RegCELoss()
@@ -32,8 +32,21 @@ class PerspectiveTrainer(BaseTrainer):
         self.logdir = logdir
         self.denormalize = img_color_denormalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
         self.alpha = alpha
-        self.use_mse = use_mse
         self.id_ratio = id_ratio
+
+        # heatmap_loss='focal' (default, original MVDeTr): world/imgs heatmap use self.focal_loss,
+        # offset/wh regression kept. 'mse'/'confuse_gaussian': whole loss is OVERWRITTEN by
+        # self.heatmap_criterion on world+imgs heatmap only (drops offset/wh regression) -- kept
+        # from the pre-existing use_mse behavior, so runs stay directly comparable to MVDet's
+        # heatmap-only loss.
+        self.heatmap_loss = heatmap_loss
+        if heatmap_loss == 'confuse_gaussian':
+            self.heatmap_criterion = ConfuseGaussianMSE(confuse_pred_thr=confuse_pred_thr,
+                                                         beta=confuse_beta, mirror=confuse_mirror)
+        elif heatmap_loss == 'mse':
+            self.heatmap_criterion = nn.MSELoss()
+        else:
+            self.heatmap_criterion = None
 
     def train(self, epoch, dataloader, optimizer, scaler, scheduler=None, log_interval=100):
         self.model.train()
@@ -62,9 +75,9 @@ class PerspectiveTrainer(BaseTrainer):
             w_loss = loss_w_hm + loss_w_off  # + self.id_ratio * loss_w_id
             img_loss = loss_img_hm + loss_img_off + loss_img_wh * 0.1  # + self.id_ratio * loss_img_id
             loss = w_loss + img_loss / N * self.alpha
-            if self.use_mse:
-                loss = self.mse_loss(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
-                       self.alpha * self.mse_loss(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
+            if self.heatmap_criterion is not None:
+                loss = self.heatmap_criterion(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
+                       self.alpha * self.heatmap_criterion(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
 
             t_f = time.time()
             t_forward += t_f - t_b
@@ -121,9 +134,9 @@ class PerspectiveTrainer(BaseTrainer):
                 (world_heatmap, world_offset), (imgs_heatmap, imgs_offset, imgs_wh) = self.model(data, affine_mats)
                 loss_w_hm = self.focal_loss(world_heatmap, world_gt['heatmap'])
                 loss = loss_w_hm
-                if self.use_mse:
-                    loss = self.mse_loss(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
-                           self.alpha * self.mse_loss(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
+                if self.heatmap_criterion is not None:
+                    loss = self.heatmap_criterion(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
+                           self.alpha * self.heatmap_criterion(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
 
             losses += loss.item()
 

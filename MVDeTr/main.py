@@ -76,10 +76,18 @@ def main(args):
                              pin_memory=True, worker_init_fn=seed_worker)
 
     # logging
+    # loss_tag mirrors Nhutan410/MVDet's main.py naming so sweep runs (different c) don't
+    # collide in logdir/wandb run name, and so 'focal' (original) vs 'mse' vs 'confuse_gaussian'
+    # are distinguishable at a glance without opening each run's config.
+    loss_tag = args.loss
+    if args.loss == 'confuse_gaussian':
+        loss_tag += f'_b{args.brl_beta}_c{args.brl_confuse_thr}'
+        if args.brl_no_mirror:
+            loss_tag += '_nomirror'
     run_timestamp = f'{datetime.datetime.today():%Y-%m-%d_%H-%M-%S}'
     if args.resume is None:
         logdir = f'logs/{args.dataset}/{"debug_" if is_debug else ""}{"SS_" if args.semi_supervised else ""}' \
-                 f'{"aug_" if args.augmentation else ""}{args.world_feat}_lr{args.lr}_baseR{args.base_lr_ratio}_' \
+                 f'{"aug_" if args.augmentation else ""}{args.world_feat}_{loss_tag}_lr{args.lr}_baseR{args.base_lr_ratio}_' \
                  f'neck{args.bottleneck_dim}_out{args.outfeat_dim}_' \
                  f'alpha{args.alpha}_id{args.id_ratio}_drop{args.dropout}_dropcam{args.dropcam}_' \
                  f'worldRK{args.world_reduce}_{args.world_kernel_size}_imgRK{args.img_reduce}_{args.img_kernel_size}_' \
@@ -104,7 +112,7 @@ def main(args):
     # distinguishable in the Runs list without opening each run's config; baseline (ratio 0) keeps
     # the old untagged name so it still matches earlier full-supervision runs by eye.
     drop_tag = f'_drop{round(args.annotation_drop_ratio * 100)}' if args.annotation_drop_ratio else ''
-    wandb_run_name = f"{args.dataset}_{args.world_feat}{drop_tag}_{run_timestamp}"
+    wandb_run_name = f"{args.dataset}_{args.world_feat}_{loss_tag}{drop_tag}_{run_timestamp}"
     wandb_run = wandb.init(entity=WANDB_ENTITY, project=WANDB_PROJECT, name=wandb_run_name,
                            group=args.dataset, job_type='eval' if args.resume is not None else 'train',
                            config=wandb_config)
@@ -138,7 +146,9 @@ def main(args):
     # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [10, 15], 0.1)
     # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, warmup_lr_scheduler)
 
-    trainer = PerspectiveTrainer(model, logdir, args.cls_thres, args.alpha, args.use_mse, args.id_ratio)
+    trainer = PerspectiveTrainer(model, logdir, args.cls_thres, args.alpha, args.loss, args.id_ratio,
+                                 confuse_pred_thr=args.brl_confuse_thr, confuse_beta=args.brl_beta,
+                                 confuse_mirror=not args.brl_no_mirror)
 
     # draw curve
     x_epoch = []
@@ -179,7 +189,25 @@ if __name__ == '__main__':
     parser.add_argument('--id_ratio', type=float, default=0)
     parser.add_argument('--cls_thres', type=float, default=0.6)
     parser.add_argument('--alpha', type=float, default=1.0, help='ratio for per view loss')
-    parser.add_argument('--use_mse', type=str2bool, default=False)
+    # Confuse-region heatmap loss, ported from Nhutan410/MVDet's confuse_gaussian_mse.py -- keeps
+    # the (already-Gaussian, built once in frameDataset.get_gt) world/imgs heatmap target, no
+    # pos_thr gate to decide which pixels are protected: a confuse-candidate pixel (pred >= c) is
+    # blended continuously by (1 - soft_gt) instead, so pixels near a KNOWN/KEPT person are
+    # auto-protected without any extra threshold (see confuse_gaussian_mse.py docstring).
+    # 'focal' = original MVDeTr modified focal loss (default, unchanged, keeps offset/wh
+    # regression); 'mse'/'confuse_gaussian' OVERWRITE the whole loss with heatmap-only MSE
+    # (drops offset/wh regression) -- same behavior the old --use_mse flag had, kept so runs stay
+    # directly comparable to MVDet's heatmap-only loss.
+    parser.add_argument('--loss', type=str, default='focal', choices=['focal', 'mse', 'confuse_gaussian'],
+                        help='focal = original MVDeTr loss; mse = plain MSE-to-Gaussian-heatmap '
+                             '(heatmap-only, like old --use_mse); confuse_gaussian = mse + confuse-region '
+                             'handling ported from MVDet, no pos_thr gate')
+    parser.add_argument('--brl_confuse_thr', type=float, default=0.3,
+                        help='pred threshold on background to mark confuse (possible missing GT)')
+    parser.add_argument('--brl_beta', type=float, default=0.1,
+                        help='weight / strength of confuse term')
+    parser.add_argument('--brl_no_mirror', action='store_true',
+                        help='if set, down-weight heatmap MSE on confuse instead of mirroring toward 1')
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18', 'mobilenet'])
     parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx'])
     parser.add_argument('-j', '--num_workers', type=int, default=4)
