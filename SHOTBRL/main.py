@@ -51,11 +51,17 @@ def main(args):
     normalize = T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     denormalize = img_color_denormalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     train_trans = T.Compose([T.Resize([720, 1280]), T.ToTensor(), normalize, ])
+    # if 'wildtrack' in args.dataset:
+    #     data_path = os.path.expanduser('../Data_temp/Wildtrack')
+    #     base = Wildtrack(data_path)
+    # elif 'multiviewx' in args.dataset:
+    #     data_path = os.path.expanduser('../Data_temp/MultiviewX')
+    #     base = MultiviewX(data_path)
     if 'wildtrack' in args.dataset:
-        data_path = os.path.expanduser('../Data_temp/Wildtrack')
+        data_path = os.path.expanduser('/kaggle/input/datasets/aryashah2k/large-scale-multicamera-detection-dataset/Wildtrack')
         base = Wildtrack(data_path)
     elif 'multiviewx' in args.dataset:
-        data_path = os.path.expanduser('../Data_temp/MultiviewX')
+        data_path = os.path.expanduser('/kaggle/input/datasets/mrriandmstique/multiview-x-multi-camera-tracking-3d/MultiviewX')
         base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
