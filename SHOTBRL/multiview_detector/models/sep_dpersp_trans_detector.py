@@ -129,8 +129,18 @@ class SepDPerspTransDetector(nn.Module):
         self.trans_map = nn.Sequential(nn.AdaptiveAvgPool2d(self.reducedgrid_shape_part), nn.Conv2d(2,2,41,padding=20,bias=False))
         for p in self.trans_map.parameters():
             p.requires_grad = False
-        self.trans_map[1].weight.data = dataset.map_kernel.float()
+        map_k = dataset.map_kernel.float()
+        if self.trans_map[1].weight.shape != map_k.shape:
+            expanded = torch.zeros_like(self.trans_map[1].weight.data)
+            expanded[0, 0] = map_k[0, 0]
+            expanded[1, 1] = map_k[0, 0]
+            self.trans_map[1].weight.data = expanded
+        else:
+            self.trans_map[1].weight.data = map_k
         self.trans_map.to('cuda:0')
+        self.map_kernel = dataset.map_kernel.float()
+        self.img_kernel = dataset.img_kernel.float()
+        self.criterion = None
         self.mse = nn.MSELoss()
         self.ce = nn.CrossEntropyLoss(reduction='none')
         self.part_cam_index = {'left': [0,1,5], 'right': [2,3,4]}
@@ -195,6 +205,10 @@ class SepDPerspTransDetector(nn.Module):
         map_result = F.interpolate(map_result, self.reducedgrid_shape_part, mode='bilinear')
         if not self.training:
             return map_result, [i[None] for i in imgs_result]
+        if self.criterion is not None:
+            loss = self.criterion(map_result, map_gt.to(map_result.device), self.map_kernel) + \
+                   alpha * self.criterion(imgs_result, imgs_gt.to(imgs_result.device), self.img_kernel)
+            return loss, map_result
         with torch.no_grad():
             imgs_gt = self.trans_img(imgs_gt).to('cuda:0')
             map_gt = self.trans_map(map_gt)

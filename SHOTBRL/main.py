@@ -13,6 +13,7 @@ import torchvision.transforms as T
 from multiview_detector.datasets import *
 from multiview_detector.loss.gaussian_mse import GaussianMSE
 from multiview_detector.loss.brl_gaussian_mse import BRLGaussianMSE
+from multiview_detector.loss.brl_gaussian_mse_v2 import BRLGaussianMSEv2
 from multiview_detector.models.dpersp_trans_detector import DPerspTransDetector
 from multiview_detector.models.persp_trans_detector import PerspTransDetector
 from multiview_detector.models.image_proj_variant import ImageProjVariant
@@ -29,6 +30,12 @@ def build_criterion(args):
     if args.loss == 'brl':
         return BRLGaussianMSE(
             pos_thr=args.brl_pos_thr,
+            confuse_pred_thr=args.brl_confuse_thr,
+            beta=args.brl_beta,
+            mirror=not args.brl_no_mirror,
+        ).cuda()
+    if args.loss == 'brl_v2':
+        return BRLGaussianMSEv2(
             confuse_pred_thr=args.brl_confuse_thr,
             beta=args.brl_beta,
             mirror=not args.brl_no_mirror,
@@ -51,17 +58,11 @@ def main(args):
     normalize = T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     denormalize = img_color_denormalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     train_trans = T.Compose([T.Resize([720, 1280]), T.ToTensor(), normalize, ])
-    # if 'wildtrack' in args.dataset:
-    #     data_path = os.path.expanduser('../Data_temp/Wildtrack')
-    #     base = Wildtrack(data_path)
-    # elif 'multiviewx' in args.dataset:
-    #     data_path = os.path.expanduser('../Data_temp/MultiviewX')
-    #     base = MultiviewX(data_path)
     if 'wildtrack' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/input/datasets/aryashah2k/large-scale-multicamera-detection-dataset/Wildtrack')
+        data_path = os.path.expanduser('../Data/Wildtrack')
         base = Wildtrack(data_path)
     elif 'multiviewx' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/input/datasets/mrriandmstique/multiview-x-multi-camera-tracking-3d/MultiviewX')
+        data_path = os.path.expanduser('../Data/MultiviewX')
         base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
@@ -104,6 +105,10 @@ def main(args):
     drop_tag = f'drop_{args.drop_ratio}' if args.drop_ratio > 0 else 'full'
     if args.loss == 'brl':
         loss_tag = f'brl_b{args.brl_pos_thr}_c{args.brl_confuse_thr}'
+        if args.brl_no_mirror:
+            loss_tag += '_nomirror'
+    elif args.loss == 'brl_v2':
+        loss_tag = f'brl_v2_b{args.brl_beta}_c{args.brl_confuse_thr}'
         if args.brl_no_mirror:
             loss_tag += '_nomirror'
     else:
@@ -203,12 +208,12 @@ if __name__ == '__main__':
                         choices=[0, 20, 45, 60],
                         help='0 = full labels; 20/45/60 = drop_annotations/drop_XX')
     # BRL heatmap loss
-    parser.add_argument('--loss', type=str, default='brl', choices=['brl', 'mse'],
-                        help='brl = Background Recalibration heatmap loss; mse = original GaussianMSE')
+    parser.add_argument('--loss', type=str, default='brl_v2', choices=['brl', 'brl_v2', 'mse'],
+                        help='brl / brl_v2 = Background Recalibration; mse = original GaussianMSE')
     parser.add_argument('--brl_pos_thr', type=float, default=0.1,
-                        help='soft-GT threshold for positive pixels')
+                        help='soft-GT threshold for positive pixels (brl v1 only)')
     parser.add_argument('--brl_confuse_thr', type=float, default=0.3,
-                        help='pred threshold on background to mark confuse (possible missing GT)')
+                        help='pred threshold on non-GT to mark confuse (possible missing GT)')
     parser.add_argument('--brl_beta', type=float, default=0.1,
                         help='weight / strength of confuse term')
     parser.add_argument('--brl_no_mirror', action='store_true',

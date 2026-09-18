@@ -2,3 +2,7 @@
 # training outputs
 **/logs/
 **/*.pth
+
+# python
+**/__pycache__/
+**/*.py[cod]

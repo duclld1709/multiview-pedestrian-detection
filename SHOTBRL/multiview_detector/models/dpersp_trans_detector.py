@@ -97,8 +97,20 @@ class DPerspTransDetector(nn.Module):
         self.trans_map = nn.Sequential(nn.AdaptiveAvgPool2d(self.reducedgrid_shape), nn.Conv2d(2,2,41,padding=20,bias=False))
         for p in self.trans_map.parameters():
             p.requires_grad = False
-        self.trans_map[1].weight.data = dataset.map_kernel.float()
+        # Conv2d(2,2) weight is [2,2,K,K]; map_kernel from dataset is [1,1,K,K] — expand for legacy blur path.
+        map_k = dataset.map_kernel.float()
+        if self.trans_map[1].weight.shape != map_k.shape:
+            expanded = torch.zeros_like(self.trans_map[1].weight.data)
+            expanded[0, 0] = map_k[0, 0]
+            expanded[1, 1] = map_k[0, 0]
+            self.trans_map[1].weight.data = expanded
+        else:
+            self.trans_map[1].weight.data = map_k
         self.trans_map.to('cuda:0')
+        # kernels for GaussianMSE / BRL (match prediction channels)
+        self.map_kernel = dataset.map_kernel.float()   # [1, 1, K, K]
+        self.img_kernel = dataset.img_kernel.float()   # [2, 2, K, K]
+        self.criterion = None  # set by DPerspectiveTrainer
         self.mse = nn.MSELoss()
         self.ce = nn.CrossEntropyLoss(reduction='none')
 
@@ -126,10 +138,16 @@ class DPerspTransDetector(nn.Module):
         map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
         if not self.training:
             return map_result, [i[None] for i in imgs_result]
+        # Train with external criterion (GaussianMSE / BRL / BRL v2): hard GT + kernel inside loss.
+        # DPerspectiveTrainer sets self.criterion; do NOT use nn.MSELoss here or BRL is ignored.
+        if self.criterion is not None:
+            loss = self.criterion(map_result, map_gt.to(map_result.device), self.map_kernel) + \
+                   alpha * self.criterion(imgs_result, imgs_gt.to(imgs_result.device), self.img_kernel)
+            return loss, map_result
         with torch.no_grad():
             imgs_gt = self.trans_img(imgs_gt).to('cuda:0')
             map_gt = self.trans_map(map_gt)
-        loss = self.mse(imgs_result, imgs_gt)*alpha+self.mse(map_result, map_gt)
+        loss = self.mse(imgs_result, imgs_gt) * alpha + self.mse(map_result, map_gt)
         return loss, map_result
 
     def get_imgcoord2worldgrid_matrices(self, intrinsic_matrices, extrinsic_matrices, worldgrid2worldcoord_mat, depth_margin):
