@@ -6,12 +6,13 @@ import torch.nn.functional as F
 import kornia
 from torchvision.models.vgg import vgg11
 from multiview_detector.models.resnet import resnet18
+from multiview_detector.models.noise_head import NoiseHead
 
 import matplotlib.pyplot as plt
 
 
 class NoJointConvVariant(nn.Module):
-    def __init__(self, dataset, arch='resnet18'):
+    def __init__(self, dataset, arch='resnet18', use_noise=False, noise_init_sigma=0.7, noise_sigma_min=0.1):
         super().__init__()
         self.num_cam = dataset.num_cam
         self.img_shape, self.reducedgrid_shape = dataset.img_shape, dataset.reducedgrid_shape
@@ -51,6 +52,9 @@ class NoJointConvVariant(nn.Module):
         self.map_classifier = nn.Sequential(nn.Conv2d(out_channel * self.num_cam + 2, 512, 1), nn.ReLU(),
                                             # nn.Conv2d(512, 512, 1), nn.ReLU(),
                                             nn.Conv2d(512, 1, 1, bias=False)).to('cuda:0')
+        self.noise_head = NoiseHead(512, kernel_size=1, padding=0, dilation=1,
+                                    init_sigma=noise_init_sigma, sigma_min=noise_sigma_min).to('cuda:0') \
+            if use_noise else None
         pass
 
     def forward(self, imgs, visualize=False):
@@ -77,12 +81,20 @@ class NoJointConvVariant(nn.Module):
         if visualize:
             plt.imshow(torch.norm(world_features[0].detach(), dim=0).cpu().numpy())
             plt.show()
-        map_result = self.map_classifier(world_features.to('cuda:0'))
+        world_features = world_features.to('cuda:0')
+        if self.noise_head is None:
+            map_result, sigma = self.map_classifier(world_features), None
+        else:
+            h = self.map_classifier[:-1](world_features)
+            map_result = self.map_classifier[-1](h)
+            sigma = self.noise_head(h, self.reducedgrid_shape)
         map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
 
         if visualize:
             plt.imshow(torch.norm(map_result[0].detach(), dim=0).cpu().numpy())
             plt.show()
+        if sigma is not None:
+            return map_result, imgs_result, sigma
         return map_result, imgs_result
 
     def get_imgcoord2worldgrid_matrices(self, intrinsic_matrices, extrinsic_matrices, worldgrid2worldcoord_mat):
