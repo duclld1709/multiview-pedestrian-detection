@@ -1,7 +1,7 @@
 data:
   class_path: datasets.PedestrianDataModule
   init_args:
-    data_dir: "/home/dangmanh/thesis/Data/Wildtrack"
+    data_dir: "/workspace/Wildtrack"
     drop_ratio: 0  # 0=full; 20/45/60 -> drop_annotations/drop_XX
 model:
   resolution: [120, 4, 360]  # Y,Z,X
