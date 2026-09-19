@@ -67,6 +67,12 @@ class WorldTrackModel(pl.LightningModule):
                                  DMIN=self.DMIN, DMAX=self.DMAX, D=self.D, num_classes=num_classes, z_sign=z_sign,
                                  num_cameras=num_cameras)
         elif model_name == 'bevformer':
+            if Bevformernet is None:
+                from models import _BEVFORMER_IMPORT_ERROR
+                raise ImportError(
+                    'Bevformernet requires a working mmcv CUDA build matching this torch. '
+                    f'Original import error: {_BEVFORMER_IMPORT_ERROR}'
+                )
             self.model = Bevformernet(self.Y, self.Z, self.X, feat2d_dim=feat2d_dim,
                                       encoder_type=self.encoder_name, num_classes=num_classes, z_sign=z_sign)
         elif model_name == 'mvdet':

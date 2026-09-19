@@ -215,3 +215,6 @@ WorldTrack/.ipynb_checkpoints/
 # IDEs
 .idea
 .vscode
+# Training outputs
+lightning_logs/
+**/lightning_logs/
