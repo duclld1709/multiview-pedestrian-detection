@@ -8,7 +8,7 @@ from models import Segnet, MVDet, Liftnet, Bevformernet
 from models.loss import FocalLoss, compute_rot_loss
 from tracking.multitracker import JDETracker
 from utils import vox, basic, decode
-from evaluation.mod import modMetricsCalculator
+from evaluation.mod import data
 from evaluation.mot_bev import mot_metrics
 
 
