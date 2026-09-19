@@ -18,3 +18,6 @@ trainer:
         save_last: true
         save_top_k: 5
         filename: "model-{epoch:02d}-{val_loss:.2f}-{val_center:.2f}"
+    - class_path: utils.checkpoint.BestCheckpointAlias
+      init_args:
+        filename: best.ckpt
