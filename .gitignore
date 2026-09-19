@@ -1,0 +1,69 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Packaging
+pip-wheel-metadata/
+*.egg
+
+# Jupyter / notebooks
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Testing / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and generated outputs
+logs/
+*.log
+runs/
+wandb/
+mlruns/
+artifacts/
+outputs/
+checkpoints/
+saved_models/
+
+# ML model / dataset artifacts
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.onnx
+*.model
+
+# Local environment files
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.temp
