@@ -50,10 +50,12 @@ class ImageProjVariant(nn.Module):
         else:
             raise Exception('architecture currently support [vgg11, resnet18]')
         # 2.5cm -> 0.5m: 20x
-        self.map_classifier = nn.Sequential(nn.Conv2d(out_channel, 512, 3, padding=1), nn.ReLU(),
-                                            # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
-                                            nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU(),
-                                            nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False)).to('cuda:0')
+        self.map_trunk = nn.Sequential(nn.Conv2d(out_channel, 512, 3, padding=1), nn.ReLU(),
+                                       # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
+                                       nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU()).to('cuda:0')
+        self.map_classifier = nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False).to('cuda:0')
+        self.map_logvar = nn.Conv2d(512, 1, 3, padding=4, dilation=4).to('cuda:0')
+        self._init_logvar_heads()
         pass
 
     def forward(self, imgs, visualize=False):
@@ -88,9 +90,15 @@ class ImageProjVariant(nn.Module):
         projected_imgs = torch.cat(projected_imgs + [self.coord_map.repeat([B, 1, 1, 1]).to('cuda:0')], dim=1)
         world_feature = self.base_pt1(projected_imgs.to('cuda:0'))
         world_feature = self.base_pt2(world_feature.to('cuda:0'))
-        map_result = self.map_classifier(world_feature.to('cuda:0'))
-        map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
-        return map_result, imgs_result
+        map_feat = self.map_trunk(world_feature.to('cuda:0'))
+        map_result = F.interpolate(self.map_classifier(map_feat), self.reducedgrid_shape, mode='bilinear')
+        map_logvar = F.interpolate(self.map_logvar(map_feat), self.reducedgrid_shape, mode='bilinear')
+        aux = {'map_logvar': map_logvar, 'imgs_logvar': [None] * len(imgs_result)}
+        return map_result, imgs_result, aux
+
+    def _init_logvar_heads(self):
+        nn.init.normal_(self.map_logvar.weight, std=1e-3)
+        nn.init.constant_(self.map_logvar.bias, -4.0)
 
     def get_imgcoord2worldgrid_matrices(self, intrinsic_matrices, extrinsic_matrices, worldgrid2worldcoord_mat):
         projection_matrices = {}

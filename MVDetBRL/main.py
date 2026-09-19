@@ -14,6 +14,7 @@ import torchvision.transforms as T
 from multiview_detector.datasets import *
 from multiview_detector.loss.gaussian_mse import GaussianMSE
 from multiview_detector.loss.brl_gaussian_mse import BRLGaussianMSE
+from multiview_detector.loss.uncertainty_brl_gaussian_mse import UncertaintyBRLGaussianMSE, ViewReliability
 from multiview_detector.models.persp_trans_detector import PerspTransDetector
 from multiview_detector.models.image_proj_variant import ImageProjVariant
 from multiview_detector.models.res_proj_variant import ResProjVariant
@@ -25,6 +26,18 @@ from multiview_detector.trainer import PerspectiveTrainer
 
 
 def build_criterion(args):
+    if args.loss == 'unc_brl':
+        return UncertaintyBRLGaussianMSE(
+            pos_thr=args.brl_pos_thr,
+            confuse_pred_thr=args.brl_confuse_thr,
+            beta=args.brl_beta,
+            mirror=not args.brl_no_mirror,
+            mode=args.unc_mode,
+            apply_on=tuple(args.unc_apply.split(',')),
+            logvar_min=args.unc_logvar_min,
+            logvar_max=args.unc_logvar_max,
+            lambda_reg=args.unc_lambda,
+        ).cuda()
     if args.loss == 'brl':
         return BRLGaussianMSE(
             pos_thr=args.brl_pos_thr,
@@ -52,10 +65,10 @@ def main(args):
     train_trans = T.Compose([T.Resize([720, 1280]), T.ToTensor(), normalize, ])
     
     if 'wildtrack' in args.dataset:
-        data_path = os.path.expanduser('../Data_temp/Wildtrack')
+        data_path = os.path.expanduser('/kaggle/working/Data_temp/Wildtrack')
         base = Wildtrack(data_path)
     elif 'multiviewx' in args.dataset:
-        data_path = os.path.expanduser('../Data_temp/MultiviewX')
+        data_path = os.path.expanduser('/kaggle/working/Data_temp/MultiviewX')
         base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
@@ -80,8 +93,17 @@ def main(args):
     else:
         raise Exception('no support for this variant')
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_loader),
+    unc_params = [p for n, p in model.named_parameters() if 'logvar' in n]
+    base_params = [p for n, p in model.named_parameters() if 'logvar' not in n]
+    if args.loss == 'unc_brl' and len(unc_params) > 0:
+        optimizer = optim.SGD([{'params': base_params},
+                               {'params': unc_params, 'lr': args.lr * 0.1}],
+                              lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        max_lr = [args.lr, args.lr * 0.1]
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        max_lr = args.lr
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=max_lr, steps_per_epoch=len(train_loader),
                                                     epochs=args.epochs)
 
     # loss
@@ -89,7 +111,11 @@ def main(args):
 
     # logging
     drop_tag = f'drop_{args.drop_ratio}' if args.drop_ratio > 0 else 'full'
-    if args.loss == 'brl':
+    if args.loss == 'unc_brl':
+        loss_tag = f'uncbrl_{args.unc_mode}_b{args.brl_beta}_c{args.brl_confuse_thr}_{args.unc_apply}'
+        if args.view_reliability:
+            loss_tag += '_vr'
+    elif args.loss == 'brl':
         loss_tag = f'brl_b{args.brl_beta}_c{args.brl_confuse_thr}'
         if args.brl_no_mirror:
             loss_tag += '_nomirror'
@@ -116,7 +142,9 @@ def main(args):
     test_prec_s = []
     test_moda_s = []
 
-    trainer = PerspectiveTrainer(model, criterion, logdir, denormalize, args.cls_thres, args.alpha)
+    view_rel = ViewReliability().cuda() if args.view_reliability else None
+    trainer = PerspectiveTrainer(model, criterion, logdir, denormalize, args.cls_thres, args.alpha,
+                                 unc_warmup=args.unc_warmup, view_reliability=view_rel)
 
     # learn
     if args.resume is None:
@@ -143,7 +171,8 @@ def main(args):
     else:
         resume_dir = f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/' + args.resume
         resume_fname = resume_dir + '/MultiviewDetector.pth'
-        model.load_state_dict(torch.load(resume_fname))
+        load_info = model.load_state_dict(torch.load(resume_fname), strict=False)
+        print('Loaded checkpoint with strict=False:', load_info)
         model.eval()
     print('Test loaded model...')
     trainer.test(test_loader, os.path.join(logdir, 'test.txt'), train_set.gt_fpath, True)
@@ -177,8 +206,8 @@ if __name__ == '__main__':
                         choices=[0, 20, 45, 60],
                         help='0 = full labels; 20/45/60 = drop_annotations/drop_XX')
     # BRL heatmap loss
-    parser.add_argument('--loss', type=str, default='brl', choices=['brl', 'mse'],
-                        help='brl = Background Recalibration heatmap loss; mse = original GaussianMSE')
+    parser.add_argument('--loss', type=str, default='unc_brl', choices=['unc_brl', 'brl', 'mse'],
+                        help='unc_brl = BRL + uncertainty; brl = Background Recalibration; mse = original GaussianMSE')
     parser.add_argument('--brl_pos_thr', type=float, default=0.1,
                         help='soft-GT threshold for positive pixels')
     parser.add_argument('--brl_confuse_thr', type=float, default=0.3,
@@ -187,6 +216,14 @@ if __name__ == '__main__':
                         help='weight / strength of confuse term')
     parser.add_argument('--brl_no_mirror', action='store_true',
                         help='if set, down-weight bg MSE on confuse instead of mirroring toward 1')
+    parser.add_argument('--unc_mode', type=str, default='nll', choices=['nll', 'mc', 'none'])
+    parser.add_argument('--unc_apply', type=str, default='pos,confuse',
+                        help='uncertainty regions: comma-separated subset of pos,confuse,neg')
+    parser.add_argument('--unc_lambda', type=float, default=0.0)
+    parser.add_argument('--unc_logvar_min', type=float, default=-8.0)
+    parser.add_argument('--unc_logvar_max', type=float, default=2.0)
+    parser.add_argument('--unc_warmup', type=int, default=1)
+    parser.add_argument('--view_reliability', action='store_true')
     args = parser.parse_args()
 
     main(args)

@@ -48,12 +48,16 @@ class ResProjVariant(nn.Module):
         else:
             raise Exception('architecture currently support [vgg11, resnet18]')
         # 2.5cm -> 0.5m: 20x
-        self.img_classifier = nn.Sequential(nn.Conv2d(out_channel, 64, 1), nn.ReLU(),
-                                            nn.Conv2d(64, 2, 1, bias=False)).to('cuda:0')
-        self.map_classifier = nn.Sequential(nn.Conv2d(self.num_cam + 2, 512, 3, padding=1), nn.ReLU(),
-                                            # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
-                                            nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU(),
-                                            nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False)).to('cuda:0')
+        self.img_trunk = nn.Sequential(nn.Conv2d(out_channel, 64, 1), nn.ReLU()).to('cuda:0')
+        self.img_classifier = nn.Conv2d(64, 2, 1, bias=False).to('cuda:0')
+        self.img_logvar = nn.Conv2d(64, 2, 1).to('cuda:0')
+
+        self.map_trunk = nn.Sequential(nn.Conv2d(self.num_cam + 2, 512, 3, padding=1), nn.ReLU(),
+                                       # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
+                                       nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU()).to('cuda:0')
+        self.map_classifier = nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False).to('cuda:0')
+        self.map_logvar = nn.Conv2d(512, 1, 3, padding=4, dilation=4).to('cuda:0')
+        self._init_logvar_heads()
         pass
 
     def forward(self, imgs, visualize=False):
@@ -61,12 +65,15 @@ class ResProjVariant(nn.Module):
         assert N == self.num_cam
         world_features = []
         imgs_result = []
+        imgs_logvar = []
         for cam in range(self.num_cam):
             img_feature = self.base_pt1(imgs[:, cam].to('cuda:0'))
             img_feature = self.base_pt2(img_feature.to('cuda:0'))
             img_feature = F.interpolate(img_feature, self.upsample_shape, mode='bilinear')
-            img_res = self.img_classifier(img_feature.to('cuda:0'))
+            img_feat = self.img_trunk(img_feature.to('cuda:0'))
+            img_res = self.img_classifier(img_feat)
             imgs_result.append(img_res)
+            imgs_logvar.append(self.img_logvar(img_feat))
             proj_mat = self.proj_mats[cam].repeat([B, 1, 1]).float().to('cuda:0')
             # head, *foot*
             world_feature = kornia.warp_perspective(img_res[:, 1].unsqueeze(1).to('cuda:0'), proj_mat,
@@ -79,9 +86,16 @@ class ResProjVariant(nn.Module):
             world_features.append(world_feature.to('cuda:0'))
 
         world_features = torch.cat(world_features + [self.coord_map.repeat([B, 1, 1, 1]).to('cuda:0')], dim=1)
-        map_result = self.map_classifier(world_features.to('cuda:0'))
-        map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
-        return map_result, imgs_result
+        map_feat = self.map_trunk(world_features.to('cuda:0'))
+        map_result = F.interpolate(self.map_classifier(map_feat), self.reducedgrid_shape, mode='bilinear')
+        map_logvar = F.interpolate(self.map_logvar(map_feat), self.reducedgrid_shape, mode='bilinear')
+        aux = {'map_logvar': map_logvar, 'imgs_logvar': imgs_logvar}
+        return map_result, imgs_result, aux
+
+    def _init_logvar_heads(self):
+        for head in (self.img_logvar, self.map_logvar):
+            nn.init.normal_(head.weight, std=1e-3)
+            nn.init.constant_(head.bias, -4.0)
 
     def get_imgcoord2worldgrid_matrices(self, intrinsic_matrices, extrinsic_matrices, worldgrid2worldcoord_mat):
         projection_matrices = {}

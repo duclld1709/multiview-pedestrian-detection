@@ -1,6 +1,7 @@
 import time
 import torch
 import os
+import inspect
 import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -18,7 +19,8 @@ class BaseTrainer(object):
 
 
 class PerspectiveTrainer(BaseTrainer):
-    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0):
+    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0,
+                 unc_warmup=1, view_reliability=None):
         super(BaseTrainer, self).__init__()
         self.model = model
         self.criterion = criterion
@@ -26,6 +28,41 @@ class PerspectiveTrainer(BaseTrainer):
         self.logdir = logdir
         self.denormalize = denormalize
         self.alpha = alpha
+        self.unc_warmup = unc_warmup
+        self.view_reliability = view_reliability
+        self.criterion_supports_logvar = 'logvar' in inspect.signature(self.criterion.forward).parameters
+
+    def _unpack_model_output(self, out):
+        if len(out) == 3:
+            return out
+        map_res, imgs_res = out
+        aux = {'map_logvar': None, 'imgs_logvar': [None] * len(imgs_res)}
+        return map_res, imgs_res, aux
+
+    def _criterion_loss(self, pred, target, kernel, logvar=None):
+        if self.criterion_supports_logvar:
+            return self.criterion(pred, target, kernel, logvar=logvar)
+        return self.criterion(pred, target, kernel)
+
+    def _heatmap_loss(self, map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc):
+        map_lv = aux['map_logvar'] if use_unc else None
+        view_losses = []
+        img_logvars = aux.get('imgs_logvar', [None] * len(imgs_res))
+
+        for i, (img_res, img_gt) in enumerate(zip(imgs_res, imgs_gt)):
+            lv = img_logvars[i] if use_unc and i < len(img_logvars) else None
+            view_losses.append(self._criterion_loss(img_res, img_gt.to(img_res.device),
+                                                    data_loader.dataset.img_kernel, logvar=lv))
+
+        valid_img_logvars = [lv for lv in img_logvars if lv is not None]
+        if self.view_reliability is not None and use_unc and valid_img_logvars:
+            w = self.view_reliability(valid_img_logvars).to(view_losses[0].device)
+            img_loss = sum(wi * li for wi, li in zip(w, view_losses)) / len(view_losses)
+        else:
+            img_loss = sum(view_losses) / len(view_losses)
+
+        return self._criterion_loss(map_res, map_gt.to(map_res.device),
+                                    data_loader.dataset.map_kernel, logvar=map_lv) + img_loss * self.alpha
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
@@ -37,14 +74,11 @@ class PerspectiveTrainer(BaseTrainer):
         t_backward = 0
         for batch_idx, (data, map_gt, imgs_gt, _) in enumerate(data_loader):
             optimizer.zero_grad()
-            map_res, imgs_res = self.model(data)
+            map_res, imgs_res, aux = self._unpack_model_output(self.model(data))
             t_f = time.time()
             t_forward += t_f - t_b
-            loss = 0
-            for img_res, img_gt in zip(imgs_res, imgs_gt):
-                loss += self.criterion(img_res, img_gt.to(img_res.device), data_loader.dataset.img_kernel)
-            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel) + \
-                   loss / len(imgs_gt) * self.alpha
+            use_unc = self.criterion_supports_logvar and epoch > self.unc_warmup
+            loss = self._heatmap_loss(map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc)
             loss.backward()
             optimizer.step()
             losses += loss.item()
@@ -93,7 +127,7 @@ class PerspectiveTrainer(BaseTrainer):
             assert gt_fpath is not None
         for batch_idx, (data, map_gt, imgs_gt, frame) in enumerate(data_loader):
             with torch.no_grad():
-                map_res, imgs_res = self.model(data)
+                map_res, imgs_res, aux = self._unpack_model_output(self.model(data))
             if res_fpath is not None:
                 map_grid_res = map_res.detach().cpu().squeeze()
                 v_s = map_grid_res[map_grid_res > self.cls_thres].unsqueeze(1)
@@ -105,11 +139,8 @@ class PerspectiveTrainer(BaseTrainer):
                 all_res_list.append(torch.cat([torch.ones_like(v_s) * frame, grid_xy.float() *
                                                data_loader.dataset.grid_reduce, v_s], dim=1))
 
-            loss = 0
-            for img_res, img_gt in zip(imgs_res, imgs_gt):
-                loss += self.criterion(img_res, img_gt.to(img_res.device), data_loader.dataset.img_kernel)
-            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel) + \
-                   loss / len(imgs_gt) * self.alpha
+            use_unc = self.criterion_supports_logvar
+            loss = self._heatmap_loss(map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc)
             losses += loss.item()
             pred = (map_res > self.cls_thres).int().to(map_gt.device)
             true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
@@ -132,6 +163,9 @@ class PerspectiveTrainer(BaseTrainer):
                            .cpu().detach().numpy().squeeze())
             plt.savefig(os.path.join(self.logdir, 'map.jpg'))
             plt.close(fig)
+            if aux['map_logvar'] is not None:
+                sigma = torch.exp(0.5 * aux['map_logvar'][0, 0].detach()).cpu().numpy()
+                plt.imsave(os.path.join(self.logdir, 'map_sigma.jpg'), sigma)
 
             # visualizing the heatmap for per-view estimation
             heatmap0_head = imgs_res[0][0, 0].detach().cpu().numpy().squeeze()
