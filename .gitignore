@@ -1,71 +1,8 @@
 
-# Python bytecode and caches
-__pycache__/
-**/__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.cache/
-
-# Virtual environments and local env files
-.env
-.env.*
-!.env.example
-.venv/
-venv/
-env/
-ENV/
-
-# Notebooks
-.ipynb_checkpoints/
-**/.ipynb_checkpoints/
-
-# IDE, OS, and local metadata
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# Training logs and experiment outputs
-logs/
+# training outputs
 **/logs/
-runs/
-**/runs/
-wandb/
-**/wandb/
-outputs/
-**/outputs/
-results/
-**/results/
-checkpoints/
-**/checkpoints/
+**/*.pth
 
-# Model checkpoints and generated artifacts
-*.pth
-*.pt
-*.ckpt
-*.onnx
-*.pkl
-*.pickle
-*.joblib
-*.npy
-*.npz
-
-# Local datasets and large raw data
-data/
-dataset/
-datasets/
-**/data/
-**/dataset/
-
-# Temporary local files
-*.tmp
-*.temp
-*.bak
-*.log
-*.patch
-/target_soft_target.png
+# python
+**/__pycache__/
+**/*.py[cod]

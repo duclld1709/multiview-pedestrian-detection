@@ -37,17 +37,13 @@ class PerspectiveTrainer(BaseTrainer):
         t_backward = 0
         for batch_idx, (data, map_gt, imgs_gt, _) in enumerate(data_loader):
             optimizer.zero_grad()
-            out = self.model(data)
-            map_res, imgs_res = out[0], out[1]
-            sigma = out[2] if len(out) > 2 else None
+            map_res, imgs_res = self.model(data)
             t_f = time.time()
             t_forward += t_f - t_b
             loss = 0
             for img_res, img_gt in zip(imgs_res, imgs_gt):
                 loss += self.criterion(img_res, img_gt.to(img_res.device), data_loader.dataset.img_kernel)
-            crit_kw = {} if sigma is None else {'sigma': sigma}
-            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel,
-                                  **crit_kw) + \
+            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel) + \
                    loss / len(imgs_gt) * self.alpha
             loss.backward()
             optimizer.step()
@@ -97,7 +93,7 @@ class PerspectiveTrainer(BaseTrainer):
             assert gt_fpath is not None
         for batch_idx, (data, map_gt, imgs_gt, frame) in enumerate(data_loader):
             with torch.no_grad():
-                map_res, imgs_res = self.model(data)[:2]
+                map_res, imgs_res = self.model(data)
             if res_fpath is not None:
                 map_grid_res = map_res.detach().cpu().squeeze()
                 v_s = map_grid_res[map_grid_res > self.cls_thres].unsqueeze(1)

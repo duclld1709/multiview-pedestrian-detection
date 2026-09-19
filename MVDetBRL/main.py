@@ -14,7 +14,6 @@ import torchvision.transforms as T
 from multiview_detector.datasets import *
 from multiview_detector.loss.gaussian_mse import GaussianMSE
 from multiview_detector.loss.brl_gaussian_mse import BRLGaussianMSE
-from multiview_detector.loss.brl_noisy_gaussian_mse import BRLNoisyGaussianMSE
 from multiview_detector.models.persp_trans_detector import PerspTransDetector
 from multiview_detector.models.image_proj_variant import ImageProjVariant
 from multiview_detector.models.res_proj_variant import ResProjVariant
@@ -32,15 +31,6 @@ def build_criterion(args):
             confuse_pred_thr=args.brl_confuse_thr,
             beta=args.brl_beta,
             mirror=not args.brl_no_mirror,
-        ).cuda()
-    if args.loss == 'brl_noise':
-        return BRLNoisyGaussianMSE(
-            pos_thr=args.brl_pos_thr,
-            confuse_pred_thr=args.brl_confuse_thr,
-            beta=args.brl_beta,
-            mirror=not args.brl_no_mirror,
-            noise_mode=args.noise_mode,
-            noise_scope=args.noise_scope,
         ).cuda()
     return GaussianMSE().cuda()
 
@@ -62,10 +52,10 @@ def main(args):
     train_trans = T.Compose([T.Resize([720, 1280]), T.ToTensor(), normalize, ])
     
     if 'wildtrack' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/working/Data_temp/Wildtrack')
+        data_path = os.path.expanduser('../Data_temp/Wildtrack')
         base = Wildtrack(data_path)
     elif 'multiviewx' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/working/Data_temp/MultiviewX')
+        data_path = os.path.expanduser('../Data_temp/MultiviewX')
         base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
@@ -79,16 +69,14 @@ def main(args):
                                               num_workers=args.num_workers, pin_memory=True)
 
     # model
-    noise_kw = dict(use_noise=(args.loss == 'brl_noise'), noise_init_sigma=args.noise_init_sigma,
-                    noise_sigma_min=args.noise_sigma_min)
     if args.variant == 'default':
-        model = PerspTransDetector(train_set, args.arch, **noise_kw)
+        model = PerspTransDetector(train_set, args.arch)
     elif args.variant == 'img_proj':
-        model = ImageProjVariant(train_set, args.arch, **noise_kw)
+        model = ImageProjVariant(train_set, args.arch)
     elif args.variant == 'res_proj':
-        model = ResProjVariant(train_set, args.arch, **noise_kw)
+        model = ResProjVariant(train_set, args.arch)
     elif args.variant == 'no_joint_conv':
-        model = NoJointConvVariant(train_set, args.arch, **noise_kw)
+        model = NoJointConvVariant(train_set, args.arch)
     else:
         raise Exception('no support for this variant')
 
@@ -105,8 +93,6 @@ def main(args):
         loss_tag = f'brl_b{args.brl_beta}_c{args.brl_confuse_thr}'
         if args.brl_no_mirror:
             loss_tag += '_nomirror'
-    elif args.loss == 'brl_noise':
-        loss_tag = f'brlnoise_{args.noise_mode}_{args.noise_scope}_s{args.noise_init_sigma}_m{args.noise_sigma_min}'
     else:
         loss_tag = 'mse'
     logdir = f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/' + datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S') \
@@ -191,9 +177,8 @@ if __name__ == '__main__':
                         choices=[0, 20, 45, 60],
                         help='0 = full labels; 20/45/60 = drop_annotations/drop_XX')
     # BRL heatmap loss
-    parser.add_argument('--loss', type=str, default='brl', choices=['brl', 'brl_noise', 'mse'],
-                        help='brl = Background Recalibration heatmap loss; '
-                             'brl_noise = BRL + learned per-pixel noise (sigma head); mse = original GaussianMSE')
+    parser.add_argument('--loss', type=str, default='brl', choices=['brl', 'mse'],
+                        help='brl = Background Recalibration heatmap loss; mse = original GaussianMSE')
     parser.add_argument('--brl_pos_thr', type=float, default=0.1,
                         help='soft-GT threshold for positive pixels')
     parser.add_argument('--brl_confuse_thr', type=float, default=0.3,
@@ -202,13 +187,6 @@ if __name__ == '__main__':
                         help='weight / strength of confuse term')
     parser.add_argument('--brl_no_mirror', action='store_true',
                         help='if set, down-weight bg MSE on confuse instead of mirroring toward 1')
-    # Learned-noise loss options, used only with --loss brl_noise.
-    parser.add_argument('--noise_mode', type=str, default='nll', choices=['nll', 'prob'],
-                        help='nll = Gaussian NLL (recommended); prob = MSE(x + sigma*eps, y) ablation')
-    parser.add_argument('--noise_scope', type=str, default='confuse', choices=['confuse', 'all'],
-                        help='confuse = noise only on confuse pixels; all = noise on every pixel')
-    parser.add_argument('--noise_init_sigma', type=float, default=0.7)
-    parser.add_argument('--noise_sigma_min', type=float, default=0.1)
     args = parser.parse_args()
 
     main(args)

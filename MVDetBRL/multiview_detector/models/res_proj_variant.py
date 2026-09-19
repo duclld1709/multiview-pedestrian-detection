@@ -8,13 +8,12 @@ from torchvision.models.alexnet import alexnet
 from torchvision.models.vgg import vgg11
 from torchvision.models.mobilenet import mobilenet_v2
 from multiview_detector.models.resnet import resnet18, resnet50
-from multiview_detector.models.noise_head import NoiseHead
 
 import matplotlib.pyplot as plt
 
 
 class ResProjVariant(nn.Module):
-    def __init__(self, dataset, arch='resnet18', use_noise=False, noise_init_sigma=0.7, noise_sigma_min=0.1):
+    def __init__(self, dataset, arch='resnet18'):
         super().__init__()
         self.num_cam = dataset.num_cam
         self.img_shape, self.reducedgrid_shape = dataset.img_shape, dataset.reducedgrid_shape
@@ -55,9 +54,6 @@ class ResProjVariant(nn.Module):
                                             # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
                                             nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU(),
                                             nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False)).to('cuda:0')
-        self.noise_head = NoiseHead(512, kernel_size=3, padding=4, dilation=4,
-                                    init_sigma=noise_init_sigma, sigma_min=noise_sigma_min).to('cuda:0') \
-            if use_noise else None
         pass
 
     def forward(self, imgs, visualize=False):
@@ -83,16 +79,8 @@ class ResProjVariant(nn.Module):
             world_features.append(world_feature.to('cuda:0'))
 
         world_features = torch.cat(world_features + [self.coord_map.repeat([B, 1, 1, 1]).to('cuda:0')], dim=1)
-        world_features = world_features.to('cuda:0')
-        if self.noise_head is None:
-            map_result, sigma = self.map_classifier(world_features), None
-        else:
-            h = self.map_classifier[:-1](world_features)
-            map_result = self.map_classifier[-1](h)
-            sigma = self.noise_head(h, self.reducedgrid_shape)
+        map_result = self.map_classifier(world_features.to('cuda:0'))
         map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
-        if sigma is not None:
-            return map_result, imgs_result, sigma
         return map_result, imgs_result
 
     def get_imgcoord2worldgrid_matrices(self, intrinsic_matrices, extrinsic_matrices, worldgrid2worldcoord_mat):
