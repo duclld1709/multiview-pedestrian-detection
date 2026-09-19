@@ -97,9 +97,9 @@ def main(args):
     base_params = [p for n, p in model.named_parameters() if 'logvar' not in n]
     if args.loss == 'unc_brl' and len(unc_params) > 0:
         optimizer = optim.SGD([{'params': base_params},
-                               {'params': unc_params, 'lr': args.lr * 0.1}],
+                               {'params': unc_params, 'lr': args.lr * args.unc_lr_scale}],
                               lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-        max_lr = [args.lr, args.lr * 0.1]
+        max_lr = [args.lr, args.lr * args.unc_lr_scale]
     else:
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
         max_lr = args.lr
@@ -144,7 +144,10 @@ def main(args):
 
     view_rel = ViewReliability().cuda() if args.view_reliability else None
     trainer = PerspectiveTrainer(model, criterion, logdir, denormalize, args.cls_thres, args.alpha,
-                                 unc_warmup=args.unc_warmup, view_reliability=view_rel)
+                                 unc_warmup=args.unc_warmup,
+                                 unc_ramp_epochs=args.unc_ramp_epochs,
+                                 grad_clip_norm=args.grad_clip_norm,
+                                 view_reliability=view_rel)
 
     # learn
     if args.resume is None:
@@ -223,6 +226,9 @@ if __name__ == '__main__':
     parser.add_argument('--unc_logvar_min', type=float, default=-8.0)
     parser.add_argument('--unc_logvar_max', type=float, default=2.0)
     parser.add_argument('--unc_warmup', type=int, default=1)
+    parser.add_argument('--unc_ramp_epochs', type=int, default=3)
+    parser.add_argument('--unc_lr_scale', type=float, default=0.01)
+    parser.add_argument('--grad_clip_norm', type=float, default=5.0)
     parser.add_argument('--view_reliability', action='store_true')
     args = parser.parse_args()
 

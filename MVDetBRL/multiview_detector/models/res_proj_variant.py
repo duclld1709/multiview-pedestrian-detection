@@ -73,7 +73,7 @@ class ResProjVariant(nn.Module):
             img_feat = self.img_trunk(img_feature.to('cuda:0'))
             img_res = self.img_classifier(img_feat)
             imgs_result.append(img_res)
-            imgs_logvar.append(self.img_logvar(img_feat))
+            imgs_logvar.append(self.img_logvar(img_feat.detach()))
             proj_mat = self.proj_mats[cam].repeat([B, 1, 1]).float().to('cuda:0')
             # head, *foot*
             world_feature = kornia.warp_perspective(img_res[:, 1].unsqueeze(1).to('cuda:0'), proj_mat,
@@ -88,7 +88,7 @@ class ResProjVariant(nn.Module):
         world_features = torch.cat(world_features + [self.coord_map.repeat([B, 1, 1, 1]).to('cuda:0')], dim=1)
         map_feat = self.map_trunk(world_features.to('cuda:0'))
         map_result = F.interpolate(self.map_classifier(map_feat), self.reducedgrid_shape, mode='bilinear')
-        map_logvar = F.interpolate(self.map_logvar(map_feat), self.reducedgrid_shape, mode='bilinear')
+        map_logvar = F.interpolate(self.map_logvar(map_feat.detach()), self.reducedgrid_shape, mode='bilinear')
         aux = {'map_logvar': map_logvar, 'imgs_logvar': imgs_logvar}
         return map_result, imgs_result, aux
 

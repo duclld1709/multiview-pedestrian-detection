@@ -92,7 +92,7 @@ class ImageProjVariant(nn.Module):
         world_feature = self.base_pt2(world_feature.to('cuda:0'))
         map_feat = self.map_trunk(world_feature.to('cuda:0'))
         map_result = F.interpolate(self.map_classifier(map_feat), self.reducedgrid_shape, mode='bilinear')
-        map_logvar = F.interpolate(self.map_logvar(map_feat), self.reducedgrid_shape, mode='bilinear')
+        map_logvar = F.interpolate(self.map_logvar(map_feat.detach()), self.reducedgrid_shape, mode='bilinear')
         aux = {'map_logvar': map_logvar, 'imgs_logvar': [None] * len(imgs_result)}
         return map_result, imgs_result, aux
 

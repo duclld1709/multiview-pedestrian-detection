@@ -69,7 +69,7 @@ class NoJointConvVariant(nn.Module):
             img_feat = self.img_trunk(img_feature.to('cuda:0'))
             img_res = self.img_classifier(img_feat)
             imgs_result.append(img_res)
-            imgs_logvar.append(self.img_logvar(img_feat))
+            imgs_logvar.append(self.img_logvar(img_feat.detach()))
             proj_mat = self.proj_mats[cam].repeat([B, 1, 1]).float().to('cuda:0')
             world_feature = kornia.warp_perspective(img_feature.to('cuda:0'), proj_mat, self.reducedgrid_shape)
             if visualize:
@@ -85,7 +85,7 @@ class NoJointConvVariant(nn.Module):
             plt.show()
         map_feat = self.map_trunk(world_features.to('cuda:0'))
         map_result = F.interpolate(self.map_classifier(map_feat), self.reducedgrid_shape, mode='bilinear')
-        map_logvar = F.interpolate(self.map_logvar(map_feat), self.reducedgrid_shape, mode='bilinear')
+        map_logvar = F.interpolate(self.map_logvar(map_feat.detach()), self.reducedgrid_shape, mode='bilinear')
 
         if visualize:
             plt.imshow(torch.norm(map_result[0].detach(), dim=0).cpu().numpy())

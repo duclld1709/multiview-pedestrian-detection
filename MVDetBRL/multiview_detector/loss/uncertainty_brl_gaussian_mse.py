@@ -62,7 +62,7 @@ class UncertaintyBRLGaussianMSE(nn.Module):
         self.last_stats = {}
 
     # ------------------------------------------------------------------ #
-    def forward(self, x, target, kernel, logvar=None):
+    def forward(self, x, target, kernel, logvar=None, uncertainty_weight=1.0):
         soft_gt = self._traget_transform(x, target, kernel)
 
         pos_mask = soft_gt >= self.pos_thr
@@ -81,19 +81,22 @@ class UncertaintyBRLGaussianMSE(nn.Module):
 
         if pos_mask.any():
             loss = loss + self._term(x, soft_gt, lv, pos_mask,
-                                     weight=1.0, use_unc=('pos' in self.apply_on))
+                                     weight=1.0, use_unc=('pos' in self.apply_on),
+                                     uncertainty_weight=uncertainty_weight)
             count = count + pos_mask.sum()
 
         if easy_neg_mask.any():
             loss = loss + self._term(x, soft_gt, lv, easy_neg_mask,
-                                     weight=1.0, use_unc=('neg' in self.apply_on))
+                                     weight=1.0, use_unc=('neg' in self.apply_on),
+                                     uncertainty_weight=uncertainty_weight)
             count = count + easy_neg_mask.sum()
 
         if confuse_mask.any():
             tgt = torch.ones_like(soft_gt) if self.mirror else soft_gt
             loss = loss + self._term(x, tgt, lv, confuse_mask,
                                      weight=self.beta,
-                                     use_unc=('confuse' in self.apply_on))
+                                     use_unc=('confuse' in self.apply_on),
+                                     uncertainty_weight=uncertainty_weight)
             count = count + confuse_mask.sum()
 
         loss = loss / count.clamp(min=1).float()
@@ -118,11 +121,12 @@ class UncertaintyBRLGaussianMSE(nn.Module):
         return loss
 
     # ------------------------------------------------------------------ #
-    def _term(self, x, tgt, lv, mask, weight, use_unc):
+    def _term(self, x, tgt, lv, mask, weight, use_unc, uncertainty_weight=1.0):
         xs, ts = x[mask], tgt[mask]
+        mse = F.mse_loss(xs, ts, reduction='sum')
 
-        if lv is None or not use_unc:
-            return weight * F.mse_loss(xs, ts, reduction='sum')
+        if lv is None or not use_unc or uncertainty_weight <= 0:
+            return weight * mse
 
         lvs = lv[mask]
 
@@ -132,12 +136,14 @@ class UncertaintyBRLGaussianMSE(nn.Module):
                               device=xs.device, dtype=xs.dtype)
             noisy = xs.unsqueeze(0) + sigma.unsqueeze(0) * eps
             se = ((noisy - ts.unsqueeze(0)) ** 2).mean(0)
-            return weight * se.sum()
+            loss_unc = se.sum()
+            return weight * (uncertainty_weight * loss_unc + (1 - uncertainty_weight) * mse)
 
         # mode == 'nll'
         se = (xs - ts) ** 2
         nll = 0.5 * (se * torch.exp(-lvs) + lvs)
-        return weight * nll.sum()
+        loss_unc = nll.sum()
+        return weight * (uncertainty_weight * loss_unc + (1 - uncertainty_weight) * mse)
 
     # ------------------------------------------------------------------ #
     def _traget_transform(self, x, target, kernel):

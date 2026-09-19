@@ -20,7 +20,7 @@ class BaseTrainer(object):
 
 class PerspectiveTrainer(BaseTrainer):
     def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0,
-                 unc_warmup=1, view_reliability=None):
+                 unc_warmup=1, unc_ramp_epochs=3, grad_clip_norm=5.0, view_reliability=None):
         super(BaseTrainer, self).__init__()
         self.model = model
         self.criterion = criterion
@@ -29,6 +29,8 @@ class PerspectiveTrainer(BaseTrainer):
         self.denormalize = denormalize
         self.alpha = alpha
         self.unc_warmup = unc_warmup
+        self.unc_ramp_epochs = unc_ramp_epochs
+        self.grad_clip_norm = grad_clip_norm
         self.view_reliability = view_reliability
         self.criterion_supports_logvar = 'logvar' in inspect.signature(self.criterion.forward).parameters
 
@@ -39,20 +41,21 @@ class PerspectiveTrainer(BaseTrainer):
         aux = {'map_logvar': None, 'imgs_logvar': [None] * len(imgs_res)}
         return map_res, imgs_res, aux
 
-    def _criterion_loss(self, pred, target, kernel, logvar=None):
+    def _criterion_loss(self, pred, target, kernel, logvar=None, uncertainty_weight=1.0):
         if self.criterion_supports_logvar:
-            return self.criterion(pred, target, kernel, logvar=logvar)
+            return self.criterion(pred, target, kernel, logvar=logvar, uncertainty_weight=uncertainty_weight)
         return self.criterion(pred, target, kernel)
 
-    def _heatmap_loss(self, map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc):
-        map_lv = aux['map_logvar'] if use_unc else None
+    def _heatmap_loss(self, map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc, uncertainty_weight=1.0):
+        map_lv = aux['map_logvar'] if use_unc and uncertainty_weight > 0 else None
         view_losses = []
         img_logvars = aux.get('imgs_logvar', [None] * len(imgs_res))
 
         for i, (img_res, img_gt) in enumerate(zip(imgs_res, imgs_gt)):
-            lv = img_logvars[i] if use_unc and i < len(img_logvars) else None
+            lv = img_logvars[i] if use_unc and uncertainty_weight > 0 and i < len(img_logvars) else None
             view_losses.append(self._criterion_loss(img_res, img_gt.to(img_res.device),
-                                                    data_loader.dataset.img_kernel, logvar=lv))
+                                                    data_loader.dataset.img_kernel, logvar=lv,
+                                                    uncertainty_weight=uncertainty_weight))
 
         valid_img_logvars = [lv for lv in img_logvars if lv is not None]
         if self.view_reliability is not None and use_unc and valid_img_logvars:
@@ -62,11 +65,20 @@ class PerspectiveTrainer(BaseTrainer):
             img_loss = sum(view_losses) / len(view_losses)
 
         return self._criterion_loss(map_res, map_gt.to(map_res.device),
-                                    data_loader.dataset.map_kernel, logvar=map_lv) + img_loss * self.alpha
+                                    data_loader.dataset.map_kernel, logvar=map_lv,
+                                    uncertainty_weight=uncertainty_weight) + img_loss * self.alpha
+
+    def _uncertainty_weight(self, epoch):
+        if not self.criterion_supports_logvar:
+            return 0.0
+        if self.unc_ramp_epochs <= 0:
+            return 1.0 if epoch > self.unc_warmup else 0.0
+        return min(1.0, max(0.0, (epoch - self.unc_warmup) / float(self.unc_ramp_epochs)))
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
         losses = 0
+        valid_batches = 0
         precision_s, recall_s = AverageMeter(), AverageMeter()
         t0 = time.time()
         t_b = time.time()
@@ -77,11 +89,19 @@ class PerspectiveTrainer(BaseTrainer):
             map_res, imgs_res, aux = self._unpack_model_output(self.model(data))
             t_f = time.time()
             t_forward += t_f - t_b
-            use_unc = self.criterion_supports_logvar and epoch > self.unc_warmup
-            loss = self._heatmap_loss(map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc)
+            unc_weight = self._uncertainty_weight(epoch)
+            use_unc = self.criterion_supports_logvar and unc_weight > 0
+            loss = self._heatmap_loss(map_res, imgs_res, aux, map_gt, imgs_gt, data_loader, use_unc, unc_weight)
+            if not torch.isfinite(loss):
+                print(f'[WARN] bad loss at epoch {epoch} batch {batch_idx}, skip step')
+                optimizer.zero_grad()
+                continue
             loss.backward()
+            if self.grad_clip_norm is not None and self.grad_clip_norm > 0:
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.grad_clip_norm)
             optimizer.step()
             losses += loss.item()
+            valid_batches += 1
             pred = (map_res > self.cls_thres).int().to(map_gt.device)
             true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
             false_positive = pred.sum().item() - true_positive
@@ -105,7 +125,7 @@ class PerspectiveTrainer(BaseTrainer):
                 t_epoch = t1 - t0
                 print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
                       'prec: {:.1f}%, recall: {:.1f}%, Time: {:.1f} (f{:.3f}+b{:.3f}), maxima: {:.3f}'.format(
-                    epoch, (batch_idx + 1), losses / (batch_idx + 1), precision_s.avg * 100, recall_s.avg * 100,
+                    epoch, (batch_idx + 1), losses / max(valid_batches, 1), precision_s.avg * 100, recall_s.avg * 100,
                     t_epoch, t_forward / batch_idx, t_backward / batch_idx, map_res.max()))
                 pass
 
@@ -113,9 +133,10 @@ class PerspectiveTrainer(BaseTrainer):
         t_epoch = t1 - t0
         print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
               'Precision: {:.1f}%, Recall: {:.1f}%, Time: {:.3f}'.format(
-            epoch, len(data_loader), losses / len(data_loader), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
+            epoch, len(data_loader), losses / max(valid_batches, 1), precision_s.avg * 100, recall_s.avg * 100,
+            t_epoch))
 
-        return losses / len(data_loader), precision_s.avg * 100
+        return losses / max(valid_batches, 1), precision_s.avg * 100
 
     def test(self, data_loader, res_fpath=None, gt_fpath=None, visualize=False):
         self.model.eval()
