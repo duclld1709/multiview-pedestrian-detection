@@ -18,7 +18,8 @@ class BaseTrainer(object):
 
 
 class PerspectiveTrainer(BaseTrainer):
-    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0):
+    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0,
+                 pseudo_loss_weight=0.1):
         super(BaseTrainer, self).__init__()
         self.model = model
         self.criterion = criterion
@@ -26,6 +27,24 @@ class PerspectiveTrainer(BaseTrainer):
         self.logdir = logdir
         self.denormalize = denormalize
         self.alpha = alpha
+        self.pseudo_loss_weight = float(pseudo_loss_weight)
+
+    def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None):
+        loss = self.criterion(map_res, map_gt.to(map_res.device), dataset.map_kernel)
+        view_loss = map_res.new_zeros(())
+        for img_res, img_gt in zip(imgs_res, imgs_gt):
+            view_loss = view_loss + self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)
+        loss = loss + view_loss / len(imgs_gt) * self.alpha
+        if pseudo_target is not None and self.pseudo_loss_weight > 0:
+            target = pseudo_target.to(map_res.device, dtype=map_res.dtype)
+            weights = pseudo_weight.to(map_res.device, dtype=map_res.dtype)
+            if target.shape[-2:] != map_res.shape[-2:]:
+                target = F.interpolate(target, size=map_res.shape[-2:], mode='bilinear', align_corners=False)
+                weights = F.interpolate(weights, size=map_res.shape[-2:], mode='bilinear', align_corners=False)
+            weighted_error = weights * (map_res - target).pow(2)
+            active_count = (weights > 0).sum().clamp(min=1).to(map_res.dtype)
+            loss = loss + self.pseudo_loss_weight * weighted_error.sum() / active_count
+        return loss
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
@@ -35,16 +54,15 @@ class PerspectiveTrainer(BaseTrainer):
         t_b = time.time()
         t_forward = 0
         t_backward = 0
-        for batch_idx, (data, map_gt, imgs_gt, _) in enumerate(data_loader):
+        for batch_idx, batch in enumerate(data_loader):
+            data, map_gt, imgs_gt, _ = batch[:4]
+            pseudo_target, pseudo_weight = batch[4:6] if len(batch) >= 6 else (None, None)
             optimizer.zero_grad()
             map_res, imgs_res = self.model(data)
             t_f = time.time()
             t_forward += t_f - t_b
-            loss = 0
-            for img_res, img_gt in zip(imgs_res, imgs_gt):
-                loss += self.criterion(img_res, img_gt.to(img_res.device), data_loader.dataset.img_kernel)
-            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel) + \
-                   loss / len(imgs_gt) * self.alpha
+            loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
+                              pseudo_target, pseudo_weight)
             loss.backward()
             optimizer.step()
             losses += loss.item()
@@ -91,7 +109,8 @@ class PerspectiveTrainer(BaseTrainer):
         t0 = time.time()
         if res_fpath is not None:
             assert gt_fpath is not None
-        for batch_idx, (data, map_gt, imgs_gt, frame) in enumerate(data_loader):
+        for batch_idx, batch in enumerate(data_loader):
+            data, map_gt, imgs_gt, frame = batch[:4]
             with torch.no_grad():
                 map_res, imgs_res = self.model(data)
             if res_fpath is not None:
@@ -105,11 +124,7 @@ class PerspectiveTrainer(BaseTrainer):
                 all_res_list.append(torch.cat([torch.ones_like(v_s) * frame, grid_xy.float() *
                                                data_loader.dataset.grid_reduce, v_s], dim=1))
 
-            loss = 0
-            for img_res, img_gt in zip(imgs_res, imgs_gt):
-                loss += self.criterion(img_res, img_gt.to(img_res.device), data_loader.dataset.img_kernel)
-            loss = self.criterion(map_res, map_gt.to(map_res.device), data_loader.dataset.map_kernel) + \
-                   loss / len(imgs_gt) * self.alpha
+            loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset)
             losses += loss.item()
             pred = (map_res > self.cls_thres).int().to(map_gt.device)
             true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()

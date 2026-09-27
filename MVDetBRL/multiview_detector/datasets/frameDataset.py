@@ -12,7 +12,8 @@ from multiview_detector.utils.projection import *
 class frameDataset(VisionDataset):
     def __init__(self, base, train=True, transform=ToTensor(), target_transform=ToTensor(),
                  reID=False, grid_reduce=4, img_reduce=4, train_ratio=0.9, force_download=True,
-                 drop_ratio=0):
+                 drop_ratio=0, pseudo_cache=None, pseudo_conf_threshold=0.2,
+                 pseudo_sigma_m=0.5, pseudo_suppress_radius_m=1.0):
         super().__init__(base.root, transform=transform, target_transform=target_transform)
 
         map_sigma, map_kernel_size = 20 / grid_reduce, 20
@@ -23,6 +24,19 @@ class frameDataset(VisionDataset):
         self.root, self.num_cam, self.num_frame = base.root, base.num_cam, base.num_frame
         self.img_shape, self.worldgrid_shape = base.img_shape, base.worldgrid_shape  # H,W; N_row,N_col
         self.reducedgrid_shape = list(map(lambda x: int(x / self.grid_reduce), self.worldgrid_shape))
+        self.pseudo_cache = None
+        self.pseudo_sigma_m = float(pseudo_sigma_m)
+        self.pseudo_suppress_radius_m = float(pseudo_suppress_radius_m)
+        self.pseudo_conf_threshold = float(pseudo_conf_threshold)
+        if pseudo_cache:
+            with open(pseudo_cache, 'r') as cache_file:
+                cache_data = json.load(cache_file)
+            cache_dataset = cache_data.get('dataset')
+            if cache_dataset and cache_dataset.lower() != base.__name__.lower():
+                raise ValueError(f'Pseudo cache is for {cache_dataset}, but dataset is {base.__name__}')
+            self.pseudo_cache = cache_data.get('detections', {})
+            if not isinstance(self.pseudo_cache, dict):
+                raise ValueError("Pseudo cache must contain a 'detections' object keyed by frame and camera")
 
         # Images/calib stay under base.root; labels can come from a drop_* folder.
         if drop_ratio > 0:
@@ -160,7 +174,86 @@ class frameDataset(VisionDataset):
             if self.target_transform is not None:
                 img_gt = self.target_transform(img_gt)
             imgs_gt.append(img_gt.float())
-        return imgs, map_gt.float(), imgs_gt, frame
+        result = (imgs, map_gt.float(), imgs_gt, frame)
+        if self.pseudo_cache is None:
+            return result
+        pseudo_target, pseudo_weight = self._build_pseudo_targets(frame, map_gt)
+        return result + (pseudo_target, pseudo_weight)
+
+    def _build_pseudo_targets(self, frame, map_gt):
+        """Project cached person foot points and rasterize soft BEV evidence."""
+        height, width = self.reducedgrid_shape
+        pseudo_target = np.zeros((height, width), dtype=np.float32)
+        pseudo_weight = np.zeros((height, width), dtype=np.float32)
+        frame_detections = self.pseudo_cache.get(str(frame), {})
+        if not isinstance(frame_detections, dict):
+            return torch.from_numpy(pseudo_target).unsqueeze(0), torch.from_numpy(pseudo_weight).unsqueeze(0)
+
+        gt_array = map_gt.detach().cpu().numpy().squeeze()
+        gt_rows, gt_cols = np.nonzero(gt_array > 0)
+        cell_size_m = 0.1 * self.grid_reduce / 4.0
+        sigma_cells = max(self.pseudo_sigma_m / cell_size_m, 0.5)
+        suppress_cells = self.pseudo_suppress_radius_m / cell_size_m
+        radius = max(int(np.ceil(3.0 * sigma_cells)), 1)
+        kernel_axis = np.arange(-radius, radius + 1, dtype=np.float32)
+        kernel_y, kernel_x = np.meshgrid(kernel_axis, kernel_axis, indexing='ij')
+        gaussian = np.exp(-(kernel_x ** 2 + kernel_y ** 2) / (2.0 * sigma_cells ** 2))
+
+        for camera_key, boxes in frame_detections.items():
+            try:
+                camera = int(camera_key)
+            except (TypeError, ValueError):
+                continue
+            if camera < 0 or camera >= self.num_cam:
+                continue
+            image_points = []
+            scores = []
+            for detection in boxes:
+                if isinstance(detection, dict):
+                    box = detection.get('bbox', detection.get('box'))
+                    score = float(detection.get('confidence', detection.get('score', 0.0)))
+                else:
+                    if len(detection) < 5:
+                        continue
+                    box, score = detection[:4], float(detection[4])
+                if box is None or score < self.pseudo_conf_threshold:
+                    continue
+                x1, y1, x2, y2 = map(float, box)
+                if not np.isfinite([x1, y1, x2, y2, score]).all() or x2 <= x1 or y2 <= y1:
+                    continue
+                image_points.append([(x1 + x2) * 0.5, y2])
+                scores.append(float(np.clip(score, 0.0, 1.0)))
+            if not image_points:
+                continue
+            world_points = get_worldcoord_from_imagecoord(
+                np.asarray(image_points, dtype=np.float64).T,
+                self.base.intrinsic_matrices[camera], self.base.extrinsic_matrices[camera])
+            grid_points = self.base.get_worldgrid_from_worldcoord(world_points)
+            for point_index, score in enumerate(scores):
+                grid_x, grid_y = grid_points[:, point_index]
+                if self.base.indexing == 'xy':
+                    col, row = int(grid_x / self.grid_reduce), int(grid_y / self.grid_reduce)
+                else:
+                    row, col = int(grid_x / self.grid_reduce), int(grid_y / self.grid_reduce)
+                if not (0 <= row < height and 0 <= col < width):
+                    continue
+                if gt_rows.size and np.min((gt_rows - row) ** 2 + (gt_cols - col) ** 2) <= suppress_cells ** 2:
+                    continue
+                y0, y1 = max(0, row - radius), min(height, row + radius + 1)
+                x0, x1 = max(0, col - radius), min(width, col + radius + 1)
+                ky0, kx0 = y0 - (row - radius), x0 - (col - radius)
+                patch = gaussian[ky0:ky0 + (y1 - y0), kx0:kx0 + (x1 - x0)]
+                if gt_rows.size:
+                    patch_rows, patch_cols = np.ogrid[y0:y1, x0:x1]
+                    near_gt = np.min((gt_rows[:, None, None] - patch_rows) ** 2 +
+                                     (gt_cols[:, None, None] - patch_cols) ** 2, axis=0) <= suppress_cells ** 2
+                    patch = np.where(near_gt, 0.0, patch)
+                np.maximum(pseudo_target[y0:y1, x0:x1], patch, out=pseudo_target[y0:y1, x0:x1])
+                np.maximum(pseudo_weight[y0:y1, x0:x1], patch * score,
+                           out=pseudo_weight[y0:y1, x0:x1])
+
+        return (torch.from_numpy(pseudo_target).unsqueeze(0),
+                torch.from_numpy(pseudo_weight).unsqueeze(0))
 
     def __len__(self):
         return len(self.map_gt.keys())

@@ -107,3 +107,16 @@ CUDA_VISIBLE_DEVICES=0 python main.py -d wildtrack --drop_ratio drop60 --loss ms
 
 bash run_dropped_annotation.sh
 ```
+
+### Offline detector pseudo-labels
+Install the added `ultralytics` dependency, then create a cache from the original camera images. Detection boxes are stored in original image coordinates.
+
+```bash
+python generate_pseudo_cache.py --dataset wildtrack --data_root ~/Data/Wildtrack \
+  --output pseudo_cache/wildtrack_yolo26s.json
+
+python main.py -d wildtrack --data_path ~/Data/Wildtrack --drop_ratio 60 --loss brl --use_pseudo_labels \
+  --pseudo_cache pseudo_cache/wildtrack_yolo26s.json
+```
+
+The cache generator defaults to `yolo26s.pt`, COCO person class, and confidence 0.20. Training defaults are pseudo loss weight 0.1, BEV Gaussian sigma 0.5 m, and GT suppression radius 1 m. The cache is dataset-specific; generate a separate one for MultiviewX. Cache output should be kept outside version control when it contains all detections.
