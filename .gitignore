@@ -208,6 +208,7 @@ cython_debug/
 
 # data
 data/
+WorldTrack/pseudo_cache/
 
 # ipynb_checkpoints
 WorldTrack/.ipynb_checkpoints/
