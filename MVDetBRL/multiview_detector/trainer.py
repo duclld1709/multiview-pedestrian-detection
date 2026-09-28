@@ -19,7 +19,7 @@ class BaseTrainer(object):
 
 class PerspectiveTrainer(BaseTrainer):
     def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0,
-                 pseudo_loss_weight=0.1):
+                 pseudo_loss_weight=0.01):
         super(BaseTrainer, self).__init__()
         self.model = model
         self.criterion = criterion
@@ -29,12 +29,14 @@ class PerspectiveTrainer(BaseTrainer):
         self.alpha = alpha
         self.pseudo_loss_weight = float(pseudo_loss_weight)
 
-    def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None):
-        loss = self.criterion(map_res, map_gt.to(map_res.device), dataset.map_kernel)
+    def _loss_components(self, map_res, map_gt, imgs_res, imgs_gt, dataset,
+                         pseudo_target=None, pseudo_weight=None):
+        base_loss = self.criterion(map_res, map_gt.to(map_res.device), dataset.map_kernel)
         view_loss = map_res.new_zeros(())
         for img_res, img_gt in zip(imgs_res, imgs_gt):
             view_loss = view_loss + self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)
-        loss = loss + view_loss / len(imgs_gt) * self.alpha
+        base_loss = base_loss + view_loss / len(imgs_gt) * self.alpha
+        pseudo_loss = map_res.new_zeros(())
         if pseudo_target is not None and self.pseudo_loss_weight > 0:
             target = pseudo_target.to(map_res.device, dtype=map_res.dtype)
             weights = pseudo_weight.to(map_res.device, dtype=map_res.dtype)
@@ -43,12 +45,19 @@ class PerspectiveTrainer(BaseTrainer):
                 weights = F.interpolate(weights, size=map_res.shape[-2:], mode='bilinear', align_corners=False)
             weighted_error = weights * (map_res - target).pow(2)
             active_count = (weights > 0).sum().clamp(min=1).to(map_res.dtype)
-            loss = loss + self.pseudo_loss_weight * weighted_error.sum() / active_count
-        return loss
+            pseudo_loss = self.pseudo_loss_weight * weighted_error.sum() / active_count
+        return base_loss, pseudo_loss
+
+    def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None):
+        base_loss, pseudo_loss = self._loss_components(
+            map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target, pseudo_weight)
+        return base_loss + pseudo_loss
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
         losses = 0
+        base_losses = 0
+        pseudo_losses = 0
         precision_s, recall_s = AverageMeter(), AverageMeter()
         t0 = time.time()
         t_b = time.time()
@@ -61,11 +70,15 @@ class PerspectiveTrainer(BaseTrainer):
             map_res, imgs_res = self.model(data)
             t_f = time.time()
             t_forward += t_f - t_b
-            loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
-                              pseudo_target, pseudo_weight)
+            base_loss, pseudo_loss = self._loss_components(
+                map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
+                pseudo_target, pseudo_weight)
+            loss = base_loss + pseudo_loss
             loss.backward()
             optimizer.step()
             losses += loss.item()
+            base_losses += base_loss.item()
+            pseudo_losses += pseudo_loss.item()
             pred = (map_res > self.cls_thres).int().to(map_gt.device)
             true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
             false_positive = pred.sum().item() - true_positive
@@ -87,17 +100,19 @@ class PerspectiveTrainer(BaseTrainer):
                 # print(cyclic_scheduler.last_epoch, optimizer.param_groups[0]['lr'])
                 t1 = time.time()
                 t_epoch = t1 - t0
-                print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
+                print('Train Epoch: {}, Batch:{}, Loss: {:.6f} (base: {:.6f}, pseudo: {:.6f}), '
                       'prec: {:.1f}%, recall: {:.1f}%, Time: {:.1f} (f{:.3f}+b{:.3f}), maxima: {:.3f}'.format(
-                    epoch, (batch_idx + 1), losses / (batch_idx + 1), precision_s.avg * 100, recall_s.avg * 100,
+                    epoch, (batch_idx + 1), losses / (batch_idx + 1), base_losses / (batch_idx + 1),
+                    pseudo_losses / (batch_idx + 1), precision_s.avg * 100, recall_s.avg * 100,
                     t_epoch, t_forward / batch_idx, t_backward / batch_idx, map_res.max()))
                 pass
 
         t1 = time.time()
         t_epoch = t1 - t0
-        print('Train Epoch: {}, Batch:{}, Loss: {:.6f}, '
+        print('Train Epoch: {}, Batch:{}, Loss: {:.6f} (base: {:.6f}, pseudo: {:.6f}), '
               'Precision: {:.1f}%, Recall: {:.1f}%, Time: {:.3f}'.format(
-            epoch, len(data_loader), losses / len(data_loader), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
+            epoch, len(data_loader), losses / len(data_loader), base_losses / len(data_loader),
+            pseudo_losses / len(data_loader), precision_s.avg * 100, recall_s.avg * 100, t_epoch))
 
         return losses / len(data_loader), precision_s.avg * 100
 
