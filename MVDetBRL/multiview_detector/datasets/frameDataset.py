@@ -195,9 +195,11 @@ class frameDataset(VisionDataset):
         sigma_cells = max(self.pseudo_sigma_m / cell_size_m, 0.5)
         suppress_cells = self.pseudo_suppress_radius_m / cell_size_m
         radius = max(int(np.ceil(3.0 * sigma_cells)), 1)
-        kernel_axis = np.arange(-radius, radius + 1, dtype=np.float32)
-        kernel_y, kernel_x = np.meshgrid(kernel_axis, kernel_axis, indexing='ij')
-        gaussian = np.exp(-(kernel_x ** 2 + kernel_y ** 2) / (2.0 * sigma_cells ** 2))
+        # Use one deterministic per-frame noise field so every BEV cell has
+        # stable jitter across epochs and overlapping detections agree.
+        noise = np.random.default_rng(int(frame)).uniform(
+            -0.05, 0.05, size=(height, width)).astype(np.float32)
+        noisy_target = np.clip(0.95 + noise, 0.0, 1.0)
 
         for camera_key, boxes in frame_detections.items():
             try:
@@ -241,15 +243,17 @@ class frameDataset(VisionDataset):
                     continue
                 y0, y1 = max(0, row - radius), min(height, row + radius + 1)
                 x0, x1 = max(0, col - radius), min(width, col + radius + 1)
-                ky0, kx0 = y0 - (row - radius), x0 - (col - radius)
-                patch = gaussian[ky0:ky0 + (y1 - y0), kx0:kx0 + (x1 - x0)]
+                patch_rows, patch_cols = np.ogrid[y0:y1, x0:x1]
+                disk = ((patch_rows - row) ** 2 + (patch_cols - col) ** 2) <= radius ** 2
                 if gt_rows.size:
-                    patch_rows, patch_cols = np.ogrid[y0:y1, x0:x1]
                     near_gt = np.min((gt_rows[:, None, None] - patch_rows) ** 2 +
                                      (gt_cols[:, None, None] - patch_cols) ** 2, axis=0) <= suppress_cells ** 2
-                    patch = np.where(near_gt, 0.0, patch)
-                np.maximum(pseudo_target[y0:y1, x0:x1], patch, out=pseudo_target[y0:y1, x0:x1])
-                np.maximum(pseudo_weight[y0:y1, x0:x1], patch * score,
+                    disk &= ~near_gt
+                target_patch = np.where(disk, noisy_target[y0:y1, x0:x1], 0.0)
+                weight_patch = np.where(disk, score, 0.0)
+                np.maximum(pseudo_target[y0:y1, x0:x1], target_patch,
+                           out=pseudo_target[y0:y1, x0:x1])
+                np.maximum(pseudo_weight[y0:y1, x0:x1], weight_patch,
                            out=pseudo_weight[y0:y1, x0:x1])
 
         return (torch.from_numpy(pseudo_target).unsqueeze(0),
