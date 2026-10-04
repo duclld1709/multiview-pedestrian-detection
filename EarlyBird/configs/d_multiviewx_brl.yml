@@ -1,0 +1,25 @@
+data:
+  class_path: datasets.PedestrianDataModule
+  init_args:
+    data_dir: "/home/dangmanh/thesis/Data/MultiviewX"
+    drop_ratio: 0  # 0=full; 20/45/60 -> drop_annotations/drop_XX
+    pseudo_cache: null  # Optional detector cache (generate_pseudo_cache.py); training split only
+    pseudo_conf_threshold: 0.5
+    pseudo_sigma_m: 0.3  # ~2x GT kernel (0.15 m), same ratio as MVDet
+    pseudo_suppress_radius_m: 1.0
+    pseudo_fuse_radius_m: 0.5  # merge per-camera projections of one person; 0 = off
+    pseudo_min_views: 1  # 1 = faithful MVDet port; >=2 = multi-view agreement (ablation)
+model:
+  resolution: [160, 2, 250]  # Y,Z,X
+  bounds: [0, 1000, 0, 640, 0, 2]  # xmin,xmax,ymin,ymax,zmin,zmax
+  depth: [100, 0, -20]
+  num_cameras: 6
+  num_ids: 350  # id: 0~349
+  gating_threshold: 30000
+  apply_brl: true
+  brl_pos_thr: 0.1
+  brl_confuse_thr: 0.4
+  brl_beta: 0.05
+  use_distance_weight: false
+  pseudo_loss_weight: 0.01
+  pseudo_mode: focal  # focal (MVDet-style counterpart) | mse (legacy)
