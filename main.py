@@ -58,10 +58,10 @@ def main(args):
     #     data_path = os.path.expanduser('../Data_temp/MultiviewX')
     #     base = MultiviewX(data_path)
     if 'wildtrack' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/input/datasets/aryashah2k/large-scale-multicamera-detection-dataset/Wildtrack')
+        data_path = os.path.expanduser('/kaggle/working/Data_temp/Wildtrack')
         base = Wildtrack(data_path)
     elif 'multiviewx' in args.dataset:
-        data_path = os.path.expanduser('/kaggle/input/datasets/mrriandmstique/multiview-x-multi-camera-tracking-3d/MultiviewX')
+        data_path = os.path.expanduser('/kaggle/working/Data_temp/MultiviewX')
         base = MultiviewX(data_path)
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
