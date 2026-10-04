@@ -24,6 +24,8 @@ class PedestrianDataModule(pl.LightningDataModule):
             pseudo_conf_threshold: float = 0.2,
             pseudo_sigma_m: float = 0.5,
             pseudo_suppress_radius_m: float = 1.0,
+            pseudo_fuse_radius_m: float = 0.5,
+            pseudo_min_views: int = 1,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -37,6 +39,8 @@ class PedestrianDataModule(pl.LightningDataModule):
         self.pseudo_conf_threshold = float(pseudo_conf_threshold)
         self.pseudo_sigma_m = float(pseudo_sigma_m)
         self.pseudo_suppress_radius_m = float(pseudo_suppress_radius_m)
+        self.pseudo_fuse_radius_m = float(pseudo_fuse_radius_m)
+        self.pseudo_min_views = int(pseudo_min_views)
         self.dataset = os.path.basename(self.data_dir)
 
         self.data_predict = None
@@ -66,6 +70,8 @@ class PedestrianDataModule(pl.LightningDataModule):
                 pseudo_conf_threshold=self.pseudo_conf_threshold,
                 pseudo_sigma_m=self.pseudo_sigma_m,
                 pseudo_suppress_radius_m=self.pseudo_suppress_radius_m,
+                pseudo_fuse_radius_m=self.pseudo_fuse_radius_m,
+                pseudo_min_views=self.pseudo_min_views,
                 **common,
             )
         if stage == 'fit' or stage == 'validate':

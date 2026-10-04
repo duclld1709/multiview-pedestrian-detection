@@ -26,6 +26,8 @@ class PedestrianDataset(VisionDataset):
         pseudo_conf_threshold=0.2,
         pseudo_sigma_m=0.5,
         pseudo_suppress_radius_m=1.0,
+        pseudo_fuse_radius_m=0.5,
+        pseudo_min_views=1,
     ):
         super().__init__(base.root)
         self.base = base
@@ -46,6 +48,8 @@ class PedestrianDataset(VisionDataset):
         self.pseudo_conf_threshold = float(pseudo_conf_threshold)
         self.pseudo_sigma_m = float(pseudo_sigma_m)
         self.pseudo_suppress_radius_m = float(pseudo_suppress_radius_m)
+        self.pseudo_fuse_radius_m = float(pseudo_fuse_radius_m)
+        self.pseudo_min_views = int(pseudo_min_views)
         self.pseudo_detections = None
         if self.pseudo_cache_path:
             with open(self.pseudo_cache_path, 'r', encoding='utf-8') as cache_file:
@@ -408,13 +412,14 @@ class PedestrianDataset(VisionDataset):
                 image_points_by_cam[camera] = image_points
                 scores_by_cam[camera] = scores
 
-        world_points, scores = [], []
+        world_points, scores, cameras = [], [], []
         for camera, image_points in image_points_by_cam.items():
             projected = basic_image_points_to_world(
                 image_points, self.base.intrinsic_matrices[camera], self.base.extrinsic_matrices[camera])
             valid = np.isfinite(projected).all(axis=1)
             world_points.extend(projected[valid].tolist())
             scores.extend(np.asarray(scores_by_cam[camera], dtype=np.float32)[valid].tolist())
+            cameras.extend([camera] * int(valid.sum()))
         if not world_points:
             return pseudo_center, pseudo_weight
 
@@ -430,6 +435,10 @@ class PedestrianDataset(VisionDataset):
                           np.linalg.norm(worldgrid_mat[:2, 0]) * units_to_m)
         voxel_size_y_m = ((self.bounds[3] - self.bounds[2]) / self.Y *
                           np.linalg.norm(worldgrid_mat[:2, 1]) * units_to_m)
+
+        finite = torch.isfinite(mem_pts[:, :2]).all(dim=1)
+        mem_pts, scores, cameras = mem_pts[finite, :2], torch.as_tensor(scores)[finite], torch.as_tensor(cameras)[finite]
+        mem_pts, scores = self.fuse_pseudo_views(mem_pts, scores, cameras, voxel_size_x_m, voxel_size_y_m)
         sigma_x = max(self.pseudo_sigma_m / max(voxel_size_x_m, 1e-6), 0.5)
         sigma_y = max(self.pseudo_sigma_m / max(voxel_size_y_m, 1e-6), 0.5)
         radius_x = max(int(np.ceil(3 * sigma_x)), 1)
@@ -437,10 +446,8 @@ class PedestrianDataset(VisionDataset):
         suppress_x = self.pseudo_suppress_radius_m / max(voxel_size_x_m, 1e-6)
         suppress_y = self.pseudo_suppress_radius_m / max(voxel_size_y_m, 1e-6)
 
-        for point, score in zip(mem_pts, scores):
+        for point, score in zip(mem_pts, scores.tolist()):
             center_x, center_y = point[:2]
-            if not torch.isfinite(point).all():
-                continue
             x, y = int(center_x.item()), int(center_y.item())
             if x < 0 or x >= self.X or y < 0 or y >= self.Y:
                 continue
@@ -469,3 +476,44 @@ class PedestrianDataset(VisionDataset):
             pseudo_weight[0, y0:y1, x0:x1] = torch.maximum(current_weight, gaussian * score)
 
         return pseudo_center, pseudo_weight
+
+    def fuse_pseudo_views(self, mem_pts, scores, cameras, voxel_size_x_m, voxel_size_y_m):
+        """Merge per-camera projections of the same person into one BEV point.
+
+        MVDet max-merges overlapping per-camera Gaussians and its MSE loss treats the
+        result as one soft blob. The focal pseudo loss turns every peak into a hard
+        positive, so the cameras are merged explicitly: greedy by score, at most one
+        point per camera per cluster, score-weighted mean position, max score.
+        Clusters seen by fewer than ``pseudo_min_views`` cameras are dropped.
+        """
+        if self.pseudo_fuse_radius_m <= 0 or len(mem_pts) == 0:
+            keep = torch.ones(len(mem_pts), dtype=torch.bool) if self.pseudo_min_views <= 1 \
+                else torch.zeros(len(mem_pts), dtype=torch.bool)
+            return mem_pts[keep], scores[keep]
+
+        scale = torch.tensor([voxel_size_x_m, voxel_size_y_m], dtype=torch.float32)
+        metric = mem_pts * scale
+        dist_sq = ((metric[:, None, :] - metric[None, :, :]) ** 2).sum(dim=-1)
+        assigned = torch.zeros(len(mem_pts), dtype=torch.bool)
+        fused_pts, fused_scores = [], []
+        for seed in torch.argsort(scores, descending=True).tolist():
+            if assigned[seed]:
+                continue
+            members, used_cameras = [seed], {int(cameras[seed])}
+            assigned[seed] = True
+            near = (dist_sq[seed] <= self.pseudo_fuse_radius_m ** 2) & ~assigned
+            for other in torch.nonzero(near).flatten()[torch.argsort(dist_sq[seed][near])].tolist():
+                camera = int(cameras[other])
+                if camera in used_cameras:
+                    continue
+                members.append(other)
+                used_cameras.add(camera)
+                assigned[other] = True
+            if len(used_cameras) < self.pseudo_min_views:
+                continue
+            weights = scores[members]
+            fused_pts.append((mem_pts[members] * weights[:, None]).sum(dim=0) / weights.sum())
+            fused_scores.append(weights.max())
+        if not fused_pts:
+            return mem_pts[:0], scores[:0]
+        return torch.stack(fused_pts), torch.stack(fused_scores)

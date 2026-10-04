@@ -71,7 +71,8 @@ def check_data(args):
     grid = DATASET_GRIDS[args.dataset]
     dropped = PedestrianDataset(
         base, is_train=True, drop_ratio=args.drop_ratio, pseudo_cache=args.pseudo_cache,
-        pseudo_conf_threshold=args.conf, pseudo_sigma_m=args.sigma_m, **grid)
+        pseudo_conf_threshold=args.conf, pseudo_sigma_m=args.sigma_m,
+        pseudo_fuse_radius_m=args.fuse_m, pseudo_min_views=args.min_views, **grid)
     full = PedestrianDataset(base, is_train=True, drop_ratio=0, **grid)
 
     Y, Z, X = grid['resolution']
@@ -125,11 +126,13 @@ def check_data(args):
     def ratio(a, b):
         return a / b if b else float('nan')
 
-    print(f'{len(indices)} frames, voxel {vox_x:.3f} x {vox_y:.3f} m, match radius {args.match_m} m')
+    print(f'{len(indices)} frames, voxel {vox_x:.3f} x {vox_y:.3f} m, match radius {args.match_m} m, '
+          f'fuse radius {args.fuse_m} m, min views {args.min_views}')
     print(f'pseudo peaks: {n_peaks} ({ratio(n_peaks, len(indices)):.1f}/frame)')
     print(f'  near any GT person : {ratio(n_peaks_correct, n_peaks):.3f}')
     print(f'  near a dropped GT  : {ratio(n_peaks_dropped, n_peaks):.3f}')
     print(f'dropped GT recovered by a pseudo peak: {n_dropped_hit}/{n_dropped} = {ratio(n_dropped_hit, n_dropped):.3f}')
+    print(f'pseudo peaks per recovered dropped GT: {ratio(n_peaks_dropped, n_dropped_hit):.2f}  (ideal: 1.0)')
 
 
 def main():
@@ -144,6 +147,8 @@ def main():
     data.add_argument('--conf', type=float, default=0.5)
     data.add_argument('--sigma-m', type=float, default=0.3)
     data.add_argument('--match-m', type=float, default=0.5)
+    data.add_argument('--fuse-m', type=float, default=0.5, help='0 = no cross-view fusion (old behaviour)')
+    data.add_argument('--min-views', type=int, default=1)
     data.add_argument('--samples', type=int, default=50)
     data.add_argument('--plots', type=int, default=5)
     data.add_argument('--out-dir', default='pseudo_check')
