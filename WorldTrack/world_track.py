@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from models import Segnet, MVDet, Liftnet, Bevformernet
-from models.loss import BRLFocalLoss, FocalLoss, compute_rot_loss
+from models.loss import BRLFocalLoss, FocalLoss, compute_rot_loss, pseudo_peak_loss
 from tracking.multitracker import JDETracker
 from utils import vox, basic, decode
 from evaluation.mod import modMetricsCalculator
@@ -35,6 +35,7 @@ class WorldTrackModel(pl.LightningModule):
             brl_beta=0.1,
             use_distance_weight=False,
             pseudo_loss_weight=0.1,
+            pseudo_mode='focal',
     ):
         super().__init__()
         self.model_name = model_name
@@ -52,6 +53,9 @@ class WorldTrackModel(pl.LightningModule):
         self.brl_beta = brl_beta
         self.use_distance_weight = use_distance_weight
         self.pseudo_loss_weight = float(pseudo_loss_weight)
+        if pseudo_mode not in ('focal', 'mse'):
+            raise ValueError(f"pseudo_mode must be 'focal' or 'mse', got {pseudo_mode!r}")
+        self.pseudo_mode = pseudo_mode
 
         # Loss: BRL on BEV + image center heatmaps when apply_brl
         if apply_brl:
@@ -174,14 +178,24 @@ class WorldTrackModel(pl.LightningModule):
         B, S = target['center_img'].shape[:2]
         center_img_g = basic.pack_seqdim(target['center_img'], B)
 
-        center_loss = self.center_loss_fn(basic.sigmoid(center_e), center_g)
-        pseudo_center_loss = center_e.new_zeros(())
+        center_p = basic.sigmoid(center_e)
+        pseudo_target = pseudo_weight = None
         if 'pseudo_center_bev' in target and self.pseudo_loss_weight > 0:
             pseudo_target = target['pseudo_center_bev'].to(device=center_e.device, dtype=center_e.dtype)
             pseudo_weight = target['pseudo_weight_bev'].to(device=center_e.device, dtype=center_e.dtype)
-            pseudo_error = pseudo_weight * (basic.sigmoid(center_e) - pseudo_target).pow(2)
-            active_count = (pseudo_weight > 0).sum().clamp(min=1).to(center_e.dtype)
-            pseudo_center_loss = pseudo_error.sum() / active_count
+
+        pseudo_center_loss = center_e.new_zeros(())
+        if pseudo_target is not None and self.pseudo_mode == 'focal':
+            # Focal counterpart of MVDet's pseudo MSE: soften the negative penalty on
+            # pseudo blobs and pull pseudo peaks up, normalised by the GT positives.
+            center_loss = self.center_loss_fn(center_p, center_g, pseudo_target, pseudo_weight)
+            pseudo_center_loss = pseudo_peak_loss(center_p, center_g, pseudo_target, pseudo_weight)
+        else:
+            center_loss = self.center_loss_fn(center_p, center_g)
+            if pseudo_target is not None:
+                pseudo_error = pseudo_weight * (center_p - pseudo_target).pow(2)
+                active_count = (pseudo_weight > 0).sum().clamp(min=1).to(center_e.dtype)
+                pseudo_center_loss = pseudo_error.sum() / active_count
         offset_loss = torch.abs(offset_e[:, :2] - offset_g[:, :2]).sum(dim=1, keepdim=True)
         offset_loss = basic.reduce_masked_mean(offset_loss, valid_g)
         tracking_loss = torch.nn.functional.smooth_l1_loss(
@@ -202,6 +216,12 @@ class WorldTrackModel(pl.LightningModule):
         center_factor = 1 / torch.exp(self.model.center_weight)
         center_loss_weight = center_factor * center_loss
         center_uncertainty_loss = self.model.center_weight
+
+        if self.pseudo_mode == 'focal':
+            # Share the centre loss scale so pseudo/base stays at pseudo_loss_weight.
+            pseudo_center_loss_weight = self.pseudo_loss_weight * 10 * center_factor * pseudo_center_loss
+        else:
+            pseudo_center_loss_weight = self.pseudo_loss_weight * pseudo_center_loss
 
         offset_factor = 1 / torch.exp(self.model.offset_weight)
         offset_loss_weight = offset_factor * offset_loss
@@ -238,7 +258,7 @@ class WorldTrackModel(pl.LightningModule):
             'size_loss': size_loss_weight,
             'rot_loss': rot_loss_weight,
             'center_img': center_img_loss,
-            'pseudo_center_loss': self.pseudo_loss_weight * pseudo_center_loss,
+            'pseudo_center_loss': pseudo_center_loss_weight,
         }
         stats_dict = {
             'center_uncertainty_loss': center_uncertainty_loss,
@@ -248,6 +268,12 @@ class WorldTrackModel(pl.LightningModule):
             'rot_uncertainty_loss': rot_uncertainty_loss,
         }
         total_loss = sum(loss_weight_dict.values()) + sum(stats_dict.values())
+
+        if pseudo_target is not None:
+            # Monitoring only: pseudo term relative to the weighted GT centre loss.
+            loss_dict['pseudo_ratio'] = (
+                pseudo_center_loss_weight / (10 * center_loss_weight).abs().clamp(min=1e-8)).detach()
+            loss_dict['pseudo_pos_cells'] = pseudo_target.eq(1).sum().float() / B
 
         return total_loss, loss_dict
 
@@ -261,6 +287,9 @@ class WorldTrackModel(pl.LightningModule):
         self.log('train_loss', total_loss, prog_bar=True, batch_size=B)
         for key, value in loss_dict.items():
             self.log(f'train/{key}', value, batch_size=B)
+
+        if 'pseudo_center_bev' in target and batch_idx % 500 == 1:
+            self.plot_pseudo(target, output, batch_idx)
 
         return total_loss
 
@@ -366,6 +395,23 @@ class WorldTrackModel(pl.LightningModule):
         ax2.set_title('center_e')
         plt.tight_layout()
         writer.add_figure(f'plot/{batch_idx}', fig, global_step=self.global_step)
+        plt.close(fig)
+
+    def plot_pseudo(self, target, output, batch_idx=0):
+        center_g = target['center_bev'][-1].amax(0).cpu().numpy()
+        pseudo_g = target['pseudo_center_bev'][-1].amax(0).cpu().numpy()
+        center_e = output['instance_center'][-1].amax(0).sigmoid().detach().cpu().numpy()
+
+        writer = self.logger.experiment
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 8))
+        ax1.imshow(center_g)
+        ax2.imshow(pseudo_g)
+        ax3.imshow(center_e)
+        ax1.set_title('center_g')
+        ax2.set_title('pseudo_center_g')
+        ax3.set_title('center_e')
+        plt.tight_layout()
+        writer.add_figure(f'train_pseudo/{batch_idx}', fig, global_step=self.global_step)
         plt.close(fig)
 
     def configure_optimizers(self):

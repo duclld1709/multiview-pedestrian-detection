@@ -455,9 +455,9 @@ class PedestrianDataset(VisionDataset):
             patch_x = torch.arange(x0, x1, dtype=torch.float32)
             patch_y = torch.arange(y0, y1, dtype=torch.float32)
             yy, xx = torch.meshgrid(patch_y, patch_x, indexing='ij')
-            gaussian = torch.exp(-0.5 * (((xx - center_x) / sigma_x) ** 2 +
-                                         ((yy - center_y) / sigma_y) ** 2))
-            gaussian = gaussian / gaussian.max().clamp(min=1e-8)
+            # Centre on the integer cell like get_bev_gt, so the peak is exactly 1 there.
+            gaussian = torch.exp(-0.5 * (((xx - x) / sigma_x) ** 2 +
+                                         ((yy - y) / sigma_y) ** 2))
             if gt_pts.numel():
                 gt_dx = (gt_pts[:, 0, None, None] - xx) * voxel_size_x_m
                 gt_dy = (gt_pts[:, 1, None, None] - yy) * voxel_size_y_m

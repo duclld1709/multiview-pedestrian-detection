@@ -5,7 +5,7 @@ data:
     drop_ratio: 0  # 0=full; 20/45/60 -> drop_annotations/drop_XX
     pseudo_cache: null  # Optional MVDetBRL detector cache; training split only
     pseudo_conf_threshold: 0.5
-    pseudo_sigma_m: 0.5
+    pseudo_sigma_m: 0.3  # ~2x GT kernel (0.15 m), same ratio as MVDet
     pseudo_suppress_radius_m: 1.0
 model:
   resolution: [160, 2, 250]  # Y,Z,X
@@ -19,5 +19,6 @@ model:
   brl_beta: 0.05
   use_distance_weight: false
   pseudo_loss_weight: 0.01
+  pseudo_mode: focal  # focal (MVDet-style counterpart) | mse (legacy)
 trainer:
   max_epochs: 50

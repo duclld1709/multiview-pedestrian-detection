@@ -16,6 +16,27 @@ class SimpleLoss(torch.nn.Module):
         return loss
 
 
+def pseudo_peak_masks(gt, pseudo_target=None, pseudo_weight=None):
+    """Pseudo peak cells and the scale applied to the GT negative branch.
+
+    Peaks (pseudo_target == 1 off the GT peaks) are supervised by
+    ``pseudo_peak_loss`` and removed from the negative/confuse branches; the
+    rest of the pseudo blob scales the negative penalty by ``1 - pseudo_weight``.
+    """
+    if pseudo_target is None:
+        return None, torch.ones_like(gt)
+    peak_inds = pseudo_target.eq(1).float() * gt.lt(1).float()
+    neg_scale = (1.0 - pseudo_weight).clamp(0.0, 1.0) * (1.0 - peak_inds)
+    return peak_inds, neg_scale
+
+
+def pseudo_peak_loss(pred, gt, pseudo_target, pseudo_weight):
+    """Score-weighted CornerNet positive term at pseudo peaks, normalised like the GT focal loss."""
+    peak_inds, _ = pseudo_peak_masks(gt, pseudo_target, pseudo_weight)
+    loss = torch.log(pred) * torch.pow(1 - pred, 2) * pseudo_weight * peak_inds
+    return -loss.sum() / gt.eq(1).float().sum().clamp(min=1)
+
+
 class FocalLoss(torch.nn.Module):
     '''nn.Module warpper for focal loss'''
 
@@ -23,16 +44,19 @@ class FocalLoss(torch.nn.Module):
         super(FocalLoss, self).__init__()
         self.use_distance_weight = use_distance_weight
 
-    def forward(self, pred, gt):
+    def forward(self, pred, gt, pseudo_target=None, pseudo_weight=None):
         """ Modified focal loss. Exactly the same as CornerNet.
             Runs faster and costs a little bit more memory
             Arguments:
                 pred (batch x c x h x w)
                 gt_regr (batch x c x h x w)
+                pseudo_target / pseudo_weight (optional, batch x c x h x w):
+                    soften the negative penalty on pseudo-labelled regions
         """
         # find pos indices and neg indices
         pos_inds = gt.eq(1).float()
-        neg_inds = gt.lt(1).float()
+        _, neg_scale = pseudo_peak_masks(gt, pseudo_target, pseudo_weight)
+        neg_inds = gt.lt(1).float() * neg_scale
 
         distance_weight = torch.ones_like(gt)
         if self.use_distance_weight:
@@ -69,6 +93,8 @@ class BRLFocalLoss(torch.nn.Module):
     where the prediction (detached) exceeds ``confuse_pred_thr`` are *confuse*
     (possible unlabeled objects) and use the positive focal branch scaled by ``beta``.
     Soft Gaussian rings (pos_thr <= gt < 1) keep standard CornerNet neg weights.
+    Optional pseudo targets scale the easy-negative branch by ``1 - pseudo_weight``
+    and take pseudo peaks out of the easy-negative and confuse branches.
     """
 
     def __init__(self, pos_thr=0.1, confuse_pred_thr=0.3, beta=0.1, use_distance_weight=False):
@@ -78,10 +104,11 @@ class BRLFocalLoss(torch.nn.Module):
         self.beta = beta
         self.use_distance_weight = use_distance_weight
 
-    def forward(self, pred, gt):
+    def forward(self, pred, gt, pseudo_target=None, pseudo_weight=None):
         pos_inds = gt.eq(1).float()
         neg_inds = gt.lt(1).float()
         bg_inds = (gt < self.pos_thr).float()
+        peak_inds, neg_scale = pseudo_peak_masks(gt, pseudo_target, pseudo_weight)
         neg_weights = torch.pow(1 - gt, 4)
 
         distance_weight = torch.ones_like(gt)
@@ -93,7 +120,9 @@ class BRLFocalLoss(torch.nn.Module):
             distance_weight = 9 * torch.sin(torch.sqrt(x * x + y * y)) + 1
 
         confuse_inds = bg_inds * (pred.detach() >= self.confuse_pred_thr).float()
-        easy_neg_inds = neg_inds * (1.0 - confuse_inds)
+        if peak_inds is not None:
+            confuse_inds = confuse_inds * (1.0 - peak_inds)
+        easy_neg_inds = neg_inds * (1.0 - confuse_inds) * neg_scale
 
         pos_loss = torch.log(pred) * torch.pow(1 - pred, 2) * pos_inds * distance_weight
         neg_loss = torch.log(1 - pred) * torch.pow(pred, 2) * neg_weights * easy_neg_inds * distance_weight
