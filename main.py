@@ -49,9 +49,9 @@ def main(args):
 
     # dataset
     if 'wildtrack' in args.dataset:
-        base = Wildtrack(os.path.expanduser('../Data/Wildtrack'))
+        base = Wildtrack(os.path.expanduser('/kaggle/working/Data_temp/Wildtrack'))
     elif 'multiviewx' in args.dataset:
-        base = MultiviewX(os.path.expanduser('../Data/MultiviewX'))
+        base = MultiviewX(os.path.expanduser('/kaggle/working/Data_temp/MultiviewX'))
     else:
         raise Exception('must choose from [wildtrack, multiviewx]')
     if args.use_pseudo_labels and not args.pseudo_cache:
