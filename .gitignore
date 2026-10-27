@@ -1,0 +1,27 @@
+# training outputs
+*.pth
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# pseudo-label caches
+pseudo_cache/
+
+# model weights & checkpoints (training logs are kept)
+*.pt
+*.ckpt
+
+# jupyter
+.ipynb_checkpoints
+
+# environments
+.env
+.venv
+venv/
+
+# IDEs
+.idea
+.vscode
