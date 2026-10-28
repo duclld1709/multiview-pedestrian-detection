@@ -4,41 +4,27 @@ from torch import nn
 import torch.nn.functional as F
 
 
-def pseudo_peak_masks(soft_gt, pseudo_target=None, pseudo_weight=None):
-    """Pseudo peak cells and the scale applied to the GT regression penalty.
-
-    Peaks (pseudo_target == 1 off the GT peaks) are supervised by ``pseudo_peak_mse_loss``
-    and removed from the GT/confuse branches; the rest of the pseudo blob scales
-    the GT penalty by ``1 - pseudo_weight``.
-    """
-    if pseudo_target is None:
-        return None, torch.ones_like(soft_gt)
-    pseudo_target = pseudo_target.to(soft_gt.device, dtype=soft_gt.dtype)
-    pseudo_weight = pseudo_weight.to(soft_gt.device, dtype=soft_gt.dtype)
-    peak_inds = pseudo_target.eq(1).to(soft_gt.dtype) * soft_gt.lt(1).to(soft_gt.dtype)
-    neg_scale = (1.0 - pseudo_weight).clamp(0.0, 1.0) * (1.0 - peak_inds)
-    return peak_inds, neg_scale
-
-
-def pseudo_peak_mse_loss(x, soft_gt, pseudo_target, pseudo_weight, normalizer):
-    """Score-weighted MSE toward 1 at pseudo peaks, normalised like the GT MSE (by ``normalizer``)."""
-    pseudo_weight = pseudo_weight.to(x.device, dtype=x.dtype)
-    peak_inds, _ = pseudo_peak_masks(soft_gt, pseudo_target, pseudo_weight)
-    loss = pseudo_weight * peak_inds * (x - 1.0).pow(2)
-    return loss.sum() / max(float(normalizer), 1.0)
-
-
 class GaussianMSE(nn.Module):
+    """
+    Original MVDet heatmap loss: MSE between prediction and the Gaussian-smoothed GT.
+
+    Optional per-pixel hooks (both None -> original code path):
+      - bg_weight:   weight on the regression term. GaussianMSE has no positive/background
+                     split, so it applies to every pixel; callers keep it at 1 on GT blobs.
+      - ignore_mask: pixels that contribute nothing (still counted in the mean).
+    """
 
     def __init__(self):
         super().__init__()
 
-    def forward(self, x, target, kernel, pseudo_target=None, pseudo_weight=None):
+    def forward(self, x, target, kernel, bg_weight=None, ignore_mask=None):
         target = self._traget_transform(x, target, kernel)
-        if pseudo_target is None:
+        if bg_weight is None and ignore_mask is None:
             return F.mse_loss(x, target)
-        _, neg_scale = pseudo_peak_masks(target, pseudo_target, pseudo_weight)
-        return (neg_scale * (x - target).pow(2)).sum() / x.numel()
+        weight = bg_weight if bg_weight is not None else torch.ones_like(x)
+        if ignore_mask is not None:
+            weight = weight * (~ignore_mask).to(x.dtype)
+        return (weight * (x - target).pow(2)).sum() / x.numel()
 
     def _traget_transform(self, x, target, kernel):
         target = F.adaptive_max_pool2d(target, x.shape[2:])

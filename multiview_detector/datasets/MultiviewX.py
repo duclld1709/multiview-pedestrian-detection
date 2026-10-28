@@ -114,12 +114,12 @@ def test():
     dataset = MultiviewX(os.path.expanduser('~/Data/MultiviewX'), )
     pom = dataset.read_pom()
 
-    foot_3ds = dataset.get_worldcoord_from_pos(np.arange(np.product(dataset.worldgrid_shape)))
+    foot_3ds = dataset.get_worldcoord_from_pos(np.arange(np.prod(dataset.worldgrid_shape)))
     errors = []
     for cam in range(dataset.num_cam):
         projected_foot_2d = get_imagecoord_from_worldcoord(foot_3ds, dataset.intrinsic_matrices[cam],
                                                            dataset.extrinsic_matrices[cam])
-        for pos in range(np.product(dataset.worldgrid_shape)):
+        for pos in range(np.prod(dataset.worldgrid_shape)):
             bbox = pom[pos][cam]
             foot_3d = dataset.get_worldcoord_from_pos(pos)
             if bbox is None:

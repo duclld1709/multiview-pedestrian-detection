@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import cv2
 from PIL import Image
 from multiview_detector.evaluation.evaluate import evaluate
-from multiview_detector.loss.gaussian_mse import pseudo_peak_mse_loss
 from multiview_detector.utils.nms import nms
 from multiview_detector.utils.meters import AverageMeter
 from multiview_detector.utils.image_utils import add_heatmap_to_image
@@ -19,8 +18,7 @@ class BaseTrainer(object):
 
 
 class PerspectiveTrainer(BaseTrainer):
-    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0,
-                 pseudo_loss_weight=0.01):
+    def __init__(self, model, criterion, logdir, denormalize, cls_thres=0.4, alpha=1.0):
         super(BaseTrainer, self).__init__()
         self.model = model
         self.criterion = criterion
@@ -28,38 +26,16 @@ class PerspectiveTrainer(BaseTrainer):
         self.logdir = logdir
         self.denormalize = denormalize
         self.alpha = alpha
-        self.pseudo_loss_weight = float(pseudo_loss_weight)
-
-    def _loss_components(self, map_res, map_gt, imgs_res, imgs_gt, dataset,
-                         pseudo_target=None, pseudo_weight=None):
-        map_gt = map_gt.to(map_res.device)
-        if pseudo_target is not None and self.pseudo_loss_weight > 0:
-            pseudo_target = pseudo_target.to(map_res.device, dtype=map_res.dtype)
-            pseudo_weight = pseudo_weight.to(map_res.device, dtype=map_res.dtype)
-            if pseudo_target.shape[-2:] != map_res.shape[-2:]:
-                # nearest keeps the exact 1.0 peaks that pseudo_peak_masks relies on
-                pseudo_target = F.interpolate(pseudo_target, size=map_res.shape[-2:], mode='nearest')
-                pseudo_weight = F.interpolate(pseudo_weight, size=map_res.shape[-2:], mode='nearest')
-        else:
-            pseudo_target = pseudo_weight = None
-        base_loss = self.criterion(map_res, map_gt, dataset.map_kernel,
-                                   pseudo_target=pseudo_target, pseudo_weight=pseudo_weight)
-        view_loss = map_res.new_zeros(())
-        for img_res, img_gt in zip(imgs_res, imgs_gt):
-            view_loss = view_loss + self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)
-        base_loss = base_loss + view_loss / len(imgs_gt) * self.alpha
-        pseudo_loss = map_res.new_zeros(())
-        if pseudo_target is not None:
-            # both GaussianMSE and BRLGaussianMSE normalise the BEV term by the pixel count
-            soft_gt = self.criterion._traget_transform(map_res, map_gt, dataset.map_kernel)
-            pseudo_loss = self.pseudo_loss_weight * pseudo_peak_mse_loss(
-                map_res, soft_gt, pseudo_target, pseudo_weight, map_res.numel())
-        return base_loss, pseudo_loss
 
     def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None):
-        base_loss, pseudo_loss = self._loss_components(
-            map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target, pseudo_weight)
-        return base_loss + pseudo_loss
+        """Returns (base_loss, pseudo_loss); criterion is a HeatmapLoss, pseudo only on the BEV map."""
+        loss = 0
+        for img_res, img_gt in zip(imgs_res, imgs_gt):
+            loss += self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)['base']
+        map_loss = self.criterion(map_res, map_gt.to(map_res.device), dataset.map_kernel,
+                                  pseudo_target, pseudo_weight)
+        base_loss = map_loss['base'] + loss / len(imgs_gt) * self.alpha
+        return base_loss, map_loss['pseudo']
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
         self.model.train()
@@ -78,9 +54,8 @@ class PerspectiveTrainer(BaseTrainer):
             map_res, imgs_res = self.model(data)
             t_f = time.time()
             t_forward += t_f - t_b
-            base_loss, pseudo_loss = self._loss_components(
-                map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
-                pseudo_target, pseudo_weight)
+            base_loss, pseudo_loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
+                                                pseudo_target, pseudo_weight)
             loss = base_loss + pseudo_loss
             loss.backward()
             optimizer.step()
@@ -132,8 +107,7 @@ class PerspectiveTrainer(BaseTrainer):
         t0 = time.time()
         if res_fpath is not None:
             assert gt_fpath is not None
-        for batch_idx, batch in enumerate(data_loader):
-            data, map_gt, imgs_gt, frame = batch[:4]
+        for batch_idx, (data, map_gt, imgs_gt, frame) in enumerate(data_loader):
             with torch.no_grad():
                 map_res, imgs_res = self.model(data)
             if res_fpath is not None:
@@ -147,7 +121,8 @@ class PerspectiveTrainer(BaseTrainer):
                 all_res_list.append(torch.cat([torch.ones_like(v_s) * frame, grid_xy.float() *
                                                data_loader.dataset.grid_reduce, v_s], dim=1))
 
-            loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset)
+            base_loss, pseudo_loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset)
+            loss = base_loss + pseudo_loss
             losses += loss.item()
             pred = (map_res > self.cls_thres).int().to(map_gt.device)
             true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
@@ -166,7 +141,7 @@ class PerspectiveTrainer(BaseTrainer):
             subplt0 = fig.add_subplot(211, title="output")
             subplt1 = fig.add_subplot(212, title="target")
             subplt0.imshow(map_res.cpu().detach().numpy().squeeze())
-            subplt1.imshow(self.criterion._traget_transform(map_res, map_gt, data_loader.dataset.map_kernel)
+            subplt1.imshow(self.criterion.base._traget_transform(map_res, map_gt, data_loader.dataset.map_kernel)
                            .cpu().detach().numpy().squeeze())
             plt.savefig(os.path.join(self.logdir, 'map.jpg'))
             plt.close(fig)
@@ -196,6 +171,7 @@ class PerspectiveTrainer(BaseTrainer):
                     ids, count = nms(positions, scores, 20, np.inf)
                     if count > 0:
                         res_list.append(torch.cat([torch.ones([count, 1]) * frame, positions[ids[:count], :]], dim=1))
+
             res_list = torch.cat(res_list, dim=0).numpy() if res_list else np.empty([0, 3])
             np.savetxt(res_fpath, res_list, '%d')
 

@@ -24,10 +24,12 @@ class frameDataset(VisionDataset):
         self.root, self.num_cam, self.num_frame = base.root, base.num_cam, base.num_frame
         self.img_shape, self.worldgrid_shape = base.img_shape, base.worldgrid_shape  # H,W; N_row,N_col
         self.reducedgrid_shape = list(map(lambda x: int(x / self.grid_reduce), self.worldgrid_shape))
+
+        # offline detector cache for pseudo labels (train set only)
         self.pseudo_cache = None
+        self.pseudo_conf_threshold = float(pseudo_conf_threshold)
         self.pseudo_sigma_m = float(pseudo_sigma_m)
         self.pseudo_suppress_radius_m = float(pseudo_suppress_radius_m)
-        self.pseudo_conf_threshold = float(pseudo_conf_threshold)
         if pseudo_cache:
             with open(pseudo_cache, 'r') as cache_file:
                 cache_data = json.load(cache_file)
@@ -38,7 +40,6 @@ class frameDataset(VisionDataset):
             if not isinstance(self.pseudo_cache, dict):
                 raise ValueError("Pseudo cache must contain a 'detections' object keyed by frame and camera")
 
-        # Images/calib stay under base.root; labels can come from a drop_* folder.
         if drop_ratio > 0:
             drop_tag = int(drop_ratio)  # 20.0 -> drop_20 (not drop_20.0)
             self.anno_dir = os.path.join(
@@ -174,14 +175,18 @@ class frameDataset(VisionDataset):
             if self.target_transform is not None:
                 img_gt = self.target_transform(img_gt)
             imgs_gt.append(img_gt.float())
-        result = (imgs, map_gt.float(), imgs_gt, frame)
         if self.pseudo_cache is None:
-            return result
+            return imgs, map_gt.float(), imgs_gt, frame
         pseudo_target, pseudo_weight = self._build_pseudo_targets(frame, map_gt)
-        return result + (pseudo_target, pseudo_weight)
+        return imgs, map_gt.float(), imgs_gt, frame, pseudo_target, pseudo_weight
 
     def _build_pseudo_targets(self, frame, map_gt):
-        """Project cached person foot points and rasterize soft BEV evidence."""
+        """Project cached person foot points to the BEV grid and rasterize soft evidence.
+
+        pseudo_target = max of Gaussian blobs (peak 1), pseudo_weight = same blobs x detector score.
+        Detections within pseudo_suppress_radius_m of a kept GT are dropped, and blob cells in
+        that radius are zeroed, so pseudo labels never touch annotated people.
+        """
         height, width = self.reducedgrid_shape
         pseudo_target = np.zeros((height, width), dtype=np.float32)
         pseudo_weight = np.zeros((height, width), dtype=np.float32)
@@ -221,6 +226,7 @@ class frameDataset(VisionDataset):
                 x1, y1, x2, y2 = map(float, box)
                 if not np.isfinite([x1, y1, x2, y2, score]).all() or x2 <= x1 or y2 <= y1:
                     continue
+                # foot point = bottom-centre of the box
                 image_points.append([(x1 + x2) * 0.5, y2])
                 scores.append(float(np.clip(score, 0.0, 1.0)))
             if not image_points:
@@ -263,7 +269,7 @@ def test():
     from multiview_detector.datasets.Wildtrack import Wildtrack
     # from multiview_detector.datasets.MultiviewX import MultiviewX
     from multiview_detector.utils.projection import get_worldcoord_from_imagecoord
-    dataset = frameDataset(Wildtrack(os.path.expanduser('../Data/Wildtrack')))
+    dataset = frameDataset(Wildtrack(os.path.expanduser('~/Data/Wildtrack')))
     # test projection
     world_grid_maps = []
     xx, yy = np.meshgrid(np.arange(0, 1920, 20), np.arange(0, 1080, 20))

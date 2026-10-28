@@ -113,17 +113,15 @@ class Wildtrack(VisionDataset):
 
 def test():
     from multiview_detector.utils.projection import get_imagecoord_from_worldcoord
-    dataset = Wildtrack(os.path.expanduser('../Data/Wildtrack'), )
+    dataset = Wildtrack(os.path.expanduser('~/Data/Wildtrack'), )
     pom = dataset.read_pom()
-    print(pom)
-    exit()
 
-    foot_3ds = dataset.get_worldcoord_from_pos(np.arange(np.product(dataset.worldgrid_shape)))
+    foot_3ds = dataset.get_worldcoord_from_pos(np.arange(np.prod(dataset.worldgrid_shape)))
     errors = []
     for cam in range(dataset.num_cam):
         projected_foot_2d = get_imagecoord_from_worldcoord(foot_3ds, dataset.intrinsic_matrices[cam],
                                                            dataset.extrinsic_matrices[cam])
-        for pos in range(np.product(dataset.worldgrid_shape)):
+        for pos in range(np.prod(dataset.worldgrid_shape)):
             bbox = pom[pos][cam]
             foot_3d = dataset.get_worldcoord_from_pos(pos)
             if bbox is None:

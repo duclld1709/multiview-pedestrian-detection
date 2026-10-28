@@ -51,7 +51,7 @@ def evaluateDetection_py(res_fpath, gt_fpath, dataset_name):
 
     gtRaw = np.loadtxt(gt_fpath)
     detRaw = np.loadtxt(res_fpath)
-
+    
     # np.loadtxt returns 1D when the file has a single row
     if gtRaw.size == 0:
         gtRaw = np.zeros((0, 3))
@@ -61,8 +61,8 @@ def evaluateDetection_py(res_fpath, gt_fpath, dataset_name):
         return 0, 0, 0, 0  # recall, precision, moda, modp
     elif detRaw.ndim == 1:
         detRaw = detRaw.reshape(1, -1)
-
-    frames = np.unique(detRaw[:, 0])
+    
+    frames = np.unique(detRaw[:, 0]) if detRaw.size else np.zeros(0)
     frame_ctr = 0
     gt_flag = True
     det_flag = True
