@@ -1,0 +1,34 @@
+# TrackTacular. torch/torchvision do setup_env.sh cài.
+# Khác requirements.txt gốc:
+#   - bỏ mmcv: chỉ BEVFormer cần (đã import lazy), ablation dùng m_mvdet
+#   - bỏ imgaug: không được import
+#   + munkres: evaluation/KITTI có import nhưng thiếu trong requirements gốc
+#   - lightning 2.0.2 -> 2.5.x: bản cũ không load được checkpoint với torch >= 2.6 (weights_only)
+#   - lap 0.4.0 -> 0.5.12: bản cũ không có wheel, build lỗi
+#   - opencv-python -> opencv-python-headless: server không có libGL
+#   - nuscenes-devkit cài --no-deps (xem tracktacular.nodeps.txt) vì nó pin matplotlib/shapely cũ
+kornia==0.6.11
+matplotlib==3.7.1
+opencv-python-headless==4.7.0.72
+lightning[extra]==2.5.2
+jsonargparse[signatures]==4.40.0
+scipy==1.10.1
+einops==0.6.1
+numpy==1.24.2
+lap==0.5.12
+motmetrics==1.4.0
+Pillow==9.5.0
+pytorch_metric_learning==2.2.0
+efficientnet_pytorch==0.7.1
+timm==0.9.2
+# phần nuscenes.eval thực sự cần
+pyquaternion
+shapely
+scikit-learn
+pycocotools
+cachetools
+descartes
+fire
+munkres
+# giữ pkg_resources/distutils shim cho các thư viện cũ
+setuptools==75.8.0

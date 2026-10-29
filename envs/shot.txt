@@ -1,0 +1,10 @@
+# SHOT (repo gốc không có requirements, dùng chung bộ của MVDet). torch/torchvision do setup_env.sh cài.
+kornia==0.7.3
+matplotlib==3.9.2
+numpy==1.24.4
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
+scipy==1.14.1
+tqdm==4.66.5
+# giữ pkg_resources/distutils shim cho các thư viện cũ
+setuptools==75.8.0

@@ -1,0 +1,4 @@
+.envs/
+__pycache__/
+models/MVDeTr/multiview_detector/models/ops/build/
+models/MVDeTr/multiview_detector/models/ops/*.egg-info/

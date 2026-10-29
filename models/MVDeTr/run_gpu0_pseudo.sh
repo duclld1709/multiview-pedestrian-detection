@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# PSEUDO_CACHE: JSON detection cache shared by all models
+CUDA_VISIBLE_DEVICES=0 python main.py \
+    -d wildtrack \
+    --data_path ../Data/Wildtrack \
+    --drop_ratio 60 \
+    --loss brl \
+    --brl_pos_thr 0.1 \
+    --brl_confuse_thr 0.4 \
+    --brl_beta 0.05 \
+    --cls_thres 0.6 \
+    --use_pseudo_labels \
+    --pseudo_cache "${PSEUDO_CACHE:?set PSEUDO_CACHE to the detection cache json}"

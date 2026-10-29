@@ -1,0 +1,421 @@
+Settings:
+{'reID': False, 'cls_thres': 0.4, 'alpha': 1.0, 'variant': 'default', 'arch': 'resnet18', 'dataset': 'wildtrack', 'data_path': '/kaggle/working/Data_temp/Wildtrack', 'num_workers': 4, 'batch_size': 1, 'epochs': 10, 'lr': 0.1, 'weight_decay': 0.0005, 'momentum': 0.5, 'log_interval': 10, 'resume': None, 'visualize': False, 'seed': 1, 'drop_ratio': 60, 'loss': 'brl', 'brl_pos_thr': 0.1, 'brl_confuse_thr': 0.3, 'brl_beta': 0.1, 'brl_no_mirror': False, 'use_pseudo_labels': True, 'pseudo_cache': 'pseudo_cache/wildtrack_yolo26s.json', 'pseudo_loss_weight': 0.01, 'pseudo_conf_threshold': 0.5, 'pseudo_sigma_m': 0.5, 'pseudo_suppress_radius_m': 1.0, 'pseudo_no_neg_reweight': False, 'pseudo_no_peak_loss': True}
+Testing...
+/kaggle/working/multiview-pedestrian-detection/multiview_detector/evaluation/pyeval/evaluateDetection.py:53: UserWarning: loadtxt: input contained no data: "/kaggle/working/multiview-pedestrian-detection/logs/wildtrack_frame/drop_60/brl_p0.1_c0.3_b0.1_pseudo_w0.01_c0.5_s0.5_r1_nopeak/default/2026-10-28_12-47-04/test.txt"
+  detRaw = np.loadtxt(res_fpath)
+moda: 0.0%, modp: 0.0%, precision: 0.0%, recall: 0.0%
+Test, Loss: 0.063417, Precision: 0.0%, Recall: 0.0, 	Time: 57.872
+  0%|          | 0/10 [00:00<?, ?it/s]Training...
+Train Epoch: 1, Batch:10, Loss: 0.031151 (base: 0.031151, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 97.9 (f1.055+b9.825), maxima: 0.326
+Train Epoch: 1, Batch:20, Loss: 0.026589 (base: 0.026589, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 130.1 (f0.831+b6.018), maxima: 0.261
+Train Epoch: 1, Batch:30, Loss: 0.022688 (base: 0.022688, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 162.8 (f0.766+b4.849), maxima: 0.103
+Train Epoch: 1, Batch:40, Loss: 0.020125 (base: 0.020125, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 196.0 (f0.737+b4.290), maxima: 0.155
+Train Epoch: 1, Batch:50, Loss: 0.017967 (base: 0.017967, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 229.5 (f0.721+b3.962), maxima: 0.088
+Train Epoch: 1, Batch:60, Loss: 0.016180 (base: 0.016180, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 262.9 (f0.711+b3.744), maxima: 0.131
+Train Epoch: 1, Batch:70, Loss: 0.014733 (base: 0.014733, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 296.1 (f0.704+b3.588), maxima: 0.113
+Train Epoch: 1, Batch:80, Loss: 0.013638 (base: 0.013638, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 329.5 (f0.698+b3.473), maxima: 0.113
+Train Epoch: 1, Batch:90, Loss: 0.012650 (base: 0.012650, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 362.9 (f0.694+b3.384), maxima: 0.147
+Train Epoch: 1, Batch:100, Loss: 0.011852 (base: 0.011852, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 396.1 (f0.690+b3.311), maxima: 0.134
+Train Epoch: 1, Batch:110, Loss: 0.011179 (base: 0.011179, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 429.3 (f0.687+b3.251), maxima: 0.134
+Train Epoch: 1, Batch:120, Loss: 0.010579 (base: 0.010579, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 462.6 (f0.685+b3.203), maxima: 0.168
+Train Epoch: 1, Batch:130, Loss: 0.010058 (base: 0.010058, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 495.7 (f0.683+b3.160), maxima: 0.135
+Train Epoch: 1, Batch:140, Loss: 0.009618 (base: 0.009618, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 528.9 (f0.681+b3.124), maxima: 0.143
+Train Epoch: 1, Batch:150, Loss: 0.009259 (base: 0.009259, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 561.9 (f0.679+b3.092), maxima: 0.201
+Train Epoch: 1, Batch:160, Loss: 0.008942 (base: 0.008942, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 595.1 (f0.678+b3.065), maxima: 0.204
+Train Epoch: 1, Batch:170, Loss: 0.008617 (base: 0.008617, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 628.3 (f0.677+b3.041), maxima: 0.152
+Train Epoch: 1, Batch:180, Loss: 0.008322 (base: 0.008322, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 661.4 (f0.676+b3.020), maxima: 0.168
+Train Epoch: 1, Batch:190, Loss: 0.008085 (base: 0.008085, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 694.6 (f0.675+b3.001), maxima: 0.247
+Train Epoch: 1, Batch:200, Loss: 0.007862 (base: 0.007862, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 728.0 (f0.674+b2.984), maxima: 0.229
+Train Epoch: 1, Batch:210, Loss: 0.007634 (base: 0.007634, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 761.1 (f0.673+b2.968), maxima: 0.244
+Train Epoch: 1, Batch:220, Loss: 0.007457 (base: 0.007457, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 794.2 (f0.673+b2.954), maxima: 0.259
+Train Epoch: 1, Batch:230, Loss: 0.007282 (base: 0.007282, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 827.5 (f0.672+b2.941), maxima: 0.315
+Train Epoch: 1, Batch:240, Loss: 0.007141 (base: 0.007141, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 860.7 (f0.672+b2.930), maxima: 0.267
+Train Epoch: 1, Batch:250, Loss: 0.007009 (base: 0.007009, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 893.9 (f0.671+b2.919), maxima: 0.281
+Train Epoch: 1, Batch:260, Loss: 0.006872 (base: 0.006872, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 927.1 (f0.671+b2.909), maxima: 0.321
+Train Epoch: 1, Batch:270, Loss: 0.006739 (base: 0.006739, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 960.3 (f0.670+b2.899), maxima: 0.275
+Train Epoch: 1, Batch:280, Loss: 0.006621 (base: 0.006621, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 993.4 (f0.670+b2.891), maxima: 0.279
+Train Epoch: 1, Batch:290, Loss: 0.006502 (base: 0.006502, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1026.6 (f0.670+b2.883), maxima: 0.285
+Train Epoch: 1, Batch:300, Loss: 0.006382 (base: 0.006382, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1059.7 (f0.669+b2.875), maxima: 0.331
+Train Epoch: 1, Batch:310, Loss: 0.006289 (base: 0.006289, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1092.8 (f0.669+b2.868), maxima: 0.230
+Train Epoch: 1, Batch:320, Loss: 0.006220 (base: 0.006220, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1126.0 (f0.669+b2.861), maxima: 0.322
+Train Epoch: 1, Batch:330, Loss: 0.006126 (base: 0.006126, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1159.1 (f0.668+b2.855), maxima: 0.435
+Train Epoch: 1, Batch:340, Loss: 0.006042 (base: 0.006042, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 1192.2 (f0.668+b2.849), maxima: 0.309
+Train Epoch: 1, Batch:350, Loss: 0.005954 (base: 0.005954, pseudo: 0.000000), prec: 0.1%, recall: 0.0%, Time: 1225.4 (f0.668+b2.844), maxima: 0.364
+Train Epoch: 1, Batch:360, Loss: 0.005875 (base: 0.005875, pseudo: 0.000000), prec: 0.1%, recall: 0.0%, Time: 1258.6 (f0.668+b2.838), maxima: 0.338
+Train Epoch: 1, Batch:360, Loss: 0.005875 (base: 0.005875, pseudo: 0.000000), Precision: 0.1%, Recall: 0.0%, Time: 1258.735
+Testing...
+ 10%|█         | 1/10 [21:42<3:15:23, 1302.62s/it]moda: 5.3%, modp: 76.3%, precision: 100.0%, recall: 5.3%
+Test, Loss: 0.007220, Precision: 0.0%, Recall: 0.0, 	Time: 43.227
+Training...
+Train Epoch: 2, Batch:10, Loss: 0.003711 (base: 0.003711, pseudo: 0.000000), prec: 0.0%, recall: 0.0%, Time: 35.8 (f1.029+b2.954), maxima: 0.394
+Train Epoch: 2, Batch:20, Loss: 0.003272 (base: 0.003272, pseudo: 0.000000), prec: 1.0%, recall: 1.3%, Time: 69.0 (f0.835+b2.796), maxima: 0.332
+Train Epoch: 2, Batch:30, Loss: 0.003241 (base: 0.003241, pseudo: 0.000000), prec: 1.3%, recall: 1.1%, Time: 102.0 (f0.774+b2.742), maxima: 0.389
+Train Epoch: 2, Batch:40, Loss: 0.003172 (base: 0.003172, pseudo: 0.000000), prec: 2.7%, recall: 2.2%, Time: 134.9 (f0.744+b2.714), maxima: 0.432
+Train Epoch: 2, Batch:50, Loss: 0.003029 (base: 0.003029, pseudo: 0.000000), prec: 2.3%, recall: 3.3%, Time: 168.0 (f0.726+b2.703), maxima: 0.729
+Train Epoch: 2, Batch:60, Loss: 0.002965 (base: 0.002965, pseudo: 0.000000), prec: 2.6%, recall: 4.7%, Time: 201.2 (f0.715+b2.695), maxima: 0.464
+Train Epoch: 2, Batch:70, Loss: 0.002989 (base: 0.002989, pseudo: 0.000000), prec: 2.5%, recall: 5.7%, Time: 234.4 (f0.707+b2.691), maxima: 0.644
+Train Epoch: 2, Batch:80, Loss: 0.003051 (base: 0.003051, pseudo: 0.000000), prec: 2.3%, recall: 5.8%, Time: 267.5 (f0.701+b2.686), maxima: 0.610
+Train Epoch: 2, Batch:90, Loss: 0.003009 (base: 0.003009, pseudo: 0.000000), prec: 2.7%, recall: 7.4%, Time: 300.8 (f0.696+b2.684), maxima: 0.593
+Train Epoch: 2, Batch:100, Loss: 0.002977 (base: 0.002977, pseudo: 0.000000), prec: 2.5%, recall: 7.1%, Time: 333.8 (f0.692+b2.680), maxima: 0.629
+Train Epoch: 2, Batch:110, Loss: 0.003007 (base: 0.003007, pseudo: 0.000000), prec: 2.4%, recall: 7.9%, Time: 366.9 (f0.689+b2.678), maxima: 0.560
+Train Epoch: 2, Batch:120, Loss: 0.003003 (base: 0.003003, pseudo: 0.000000), prec: 2.4%, recall: 8.8%, Time: 399.9 (f0.686+b2.675), maxima: 0.843
+Train Epoch: 2, Batch:130, Loss: 0.003007 (base: 0.003007, pseudo: 0.000000), prec: 2.4%, recall: 9.9%, Time: 433.0 (f0.684+b2.673), maxima: 0.833
+Train Epoch: 2, Batch:140, Loss: 0.002991 (base: 0.002991, pseudo: 0.000000), prec: 2.3%, recall: 10.8%, Time: 466.1 (f0.682+b2.671), maxima: 0.902
+Train Epoch: 2, Batch:150, Loss: 0.002988 (base: 0.002988, pseudo: 0.000000), prec: 2.3%, recall: 12.3%, Time: 499.1 (f0.680+b2.669), maxima: 0.724
+Train Epoch: 2, Batch:160, Loss: 0.002971 (base: 0.002971, pseudo: 0.000000), prec: 2.3%, recall: 12.6%, Time: 532.0 (f0.679+b2.667), maxima: 0.660
+Train Epoch: 2, Batch:170, Loss: 0.002971 (base: 0.002971, pseudo: 0.000000), prec: 2.2%, recall: 12.8%, Time: 565.1 (f0.678+b2.666), maxima: 0.831
+Train Epoch: 2, Batch:180, Loss: 0.002985 (base: 0.002985, pseudo: 0.000000), prec: 2.2%, recall: 13.4%, Time: 598.2 (f0.676+b2.665), maxima: 0.953
+Train Epoch: 2, Batch:190, Loss: 0.002977 (base: 0.002977, pseudo: 0.000000), prec: 2.2%, recall: 13.6%, Time: 631.4 (f0.675+b2.665), maxima: 1.008
+Train Epoch: 2, Batch:200, Loss: 0.002979 (base: 0.002979, pseudo: 0.000000), prec: 2.1%, recall: 14.1%, Time: 664.5 (f0.675+b2.665), maxima: 0.975
+Train Epoch: 2, Batch:210, Loss: 0.002992 (base: 0.002992, pseudo: 0.000000), prec: 2.1%, recall: 14.5%, Time: 697.6 (f0.674+b2.664), maxima: 0.909
+Train Epoch: 2, Batch:220, Loss: 0.002984 (base: 0.002984, pseudo: 0.000000), prec: 2.1%, recall: 15.1%, Time: 730.7 (f0.673+b2.664), maxima: 0.960
+Train Epoch: 2, Batch:230, Loss: 0.002971 (base: 0.002971, pseudo: 0.000000), prec: 2.1%, recall: 15.8%, Time: 763.7 (f0.672+b2.663), maxima: 0.746
+Train Epoch: 2, Batch:240, Loss: 0.002964 (base: 0.002964, pseudo: 0.000000), prec: 2.0%, recall: 16.4%, Time: 796.8 (f0.672+b2.662), maxima: 1.031
+Train Epoch: 2, Batch:250, Loss: 0.002932 (base: 0.002932, pseudo: 0.000000), prec: 2.0%, recall: 18.0%, Time: 829.8 (f0.671+b2.662), maxima: 0.748
+Train Epoch: 2, Batch:260, Loss: 0.002930 (base: 0.002930, pseudo: 0.000000), prec: 2.0%, recall: 18.8%, Time: 862.8 (f0.671+b2.661), maxima: 0.723
+Train Epoch: 2, Batch:270, Loss: 0.002919 (base: 0.002919, pseudo: 0.000000), prec: 2.0%, recall: 19.6%, Time: 895.9 (f0.670+b2.660), maxima: 0.867
+Train Epoch: 2, Batch:280, Loss: 0.002890 (base: 0.002890, pseudo: 0.000000), prec: 2.0%, recall: 20.8%, Time: 928.9 (f0.670+b2.660), maxima: 1.154
+Train Epoch: 2, Batch:290, Loss: 0.002879 (base: 0.002879, pseudo: 0.000000), prec: 2.0%, recall: 21.4%, Time: 962.0 (f0.669+b2.659), maxima: 0.858
+Train Epoch: 2, Batch:300, Loss: 0.002880 (base: 0.002880, pseudo: 0.000000), prec: 2.0%, recall: 21.8%, Time: 995.1 (f0.669+b2.659), maxima: 0.657
+Train Epoch: 2, Batch:310, Loss: 0.002871 (base: 0.002871, pseudo: 0.000000), prec: 2.0%, recall: 22.6%, Time: 1028.1 (f0.669+b2.659), maxima: 1.167
+Train Epoch: 2, Batch:320, Loss: 0.002871 (base: 0.002871, pseudo: 0.000000), prec: 2.0%, recall: 23.1%, Time: 1061.1 (f0.668+b2.658), maxima: 1.033
+Train Epoch: 2, Batch:330, Loss: 0.002873 (base: 0.002873, pseudo: 0.000000), prec: 2.0%, recall: 23.5%, Time: 1094.3 (f0.668+b2.658), maxima: 1.155
+Train Epoch: 2, Batch:340, Loss: 0.002875 (base: 0.002875, pseudo: 0.000000), prec: 1.9%, recall: 23.7%, Time: 1127.4 (f0.668+b2.658), maxima: 0.632
+Train Epoch: 2, Batch:350, Loss: 0.002858 (base: 0.002858, pseudo: 0.000000), prec: 1.9%, recall: 24.4%, Time: 1160.5 (f0.667+b2.658), maxima: 0.925
+Train Epoch: 2, Batch:360, Loss: 0.002849 (base: 0.002849, pseudo: 0.000000), prec: 1.9%, recall: 24.6%, Time: 1193.4 (f0.667+b2.657), maxima: 0.779
+Train Epoch: 2, Batch:360, Loss: 0.002849 (base: 0.002849, pseudo: 0.000000), Precision: 1.9%, Recall: 24.6%, Time: 1193.615
+Testing...
+ 20%|██        | 2/10 [42:20<2:48:36, 1264.57s/it]moda: 47.4%, modp: 73.0%, precision: 98.7%, recall: 48.0%
+Test, Loss: 0.005267, Precision: 4.9%, Recall: 40.3, 	Time: 43.587
+Training...
+Train Epoch: 3, Batch:10, Loss: 0.002753 (base: 0.002753, pseudo: 0.000000), prec: 1.5%, recall: 44.4%, Time: 36.2 (f1.079+b2.940), maxima: 1.081
+Train Epoch: 3, Batch:20, Loss: 0.002631 (base: 0.002631, pseudo: 0.000000), prec: 1.7%, recall: 46.0%, Time: 69.2 (f0.858+b2.782), maxima: 1.082
+Train Epoch: 3, Batch:30, Loss: 0.002634 (base: 0.002634, pseudo: 0.000000), prec: 1.5%, recall: 41.3%, Time: 101.9 (f0.788+b2.727), maxima: 1.431
+Train Epoch: 3, Batch:40, Loss: 0.002693 (base: 0.002693, pseudo: 0.000000), prec: 1.5%, recall: 41.4%, Time: 134.9 (f0.754+b2.704), maxima: 0.945
+Train Epoch: 3, Batch:50, Loss: 0.002543 (base: 0.002543, pseudo: 0.000000), prec: 1.6%, recall: 43.6%, Time: 167.9 (f0.734+b2.692), maxima: 1.254
+Train Epoch: 3, Batch:60, Loss: 0.002511 (base: 0.002511, pseudo: 0.000000), prec: 1.6%, recall: 45.2%, Time: 201.0 (f0.721+b2.685), maxima: 1.130
+Train Epoch: 3, Batch:70, Loss: 0.002511 (base: 0.002511, pseudo: 0.000000), prec: 1.6%, recall: 45.5%, Time: 234.2 (f0.712+b2.682), maxima: 1.323
+Train Epoch: 3, Batch:80, Loss: 0.002534 (base: 0.002534, pseudo: 0.000000), prec: 1.6%, recall: 44.1%, Time: 267.3 (f0.705+b2.678), maxima: 0.859
+Train Epoch: 3, Batch:90, Loss: 0.002514 (base: 0.002514, pseudo: 0.000000), prec: 1.6%, recall: 44.6%, Time: 300.3 (f0.700+b2.674), maxima: 1.165
+Train Epoch: 3, Batch:100, Loss: 0.002574 (base: 0.002574, pseudo: 0.000000), prec: 1.6%, recall: 44.0%, Time: 333.2 (f0.696+b2.670), maxima: 0.760
+Train Epoch: 3, Batch:110, Loss: 0.002577 (base: 0.002577, pseudo: 0.000000), prec: 1.6%, recall: 43.1%, Time: 366.4 (f0.692+b2.669), maxima: 1.044
+Train Epoch: 3, Batch:120, Loss: 0.002625 (base: 0.002625, pseudo: 0.000000), prec: 1.6%, recall: 42.9%, Time: 399.4 (f0.689+b2.668), maxima: 1.044
+Train Epoch: 3, Batch:130, Loss: 0.002579 (base: 0.002579, pseudo: 0.000000), prec: 1.6%, recall: 44.2%, Time: 432.5 (f0.686+b2.666), maxima: 1.050
+Train Epoch: 3, Batch:140, Loss: 0.002579 (base: 0.002579, pseudo: 0.000000), prec: 1.6%, recall: 44.6%, Time: 465.4 (f0.684+b2.664), maxima: 0.839
+Train Epoch: 3, Batch:150, Loss: 0.002567 (base: 0.002567, pseudo: 0.000000), prec: 1.6%, recall: 44.9%, Time: 498.4 (f0.683+b2.662), maxima: 1.013
+Train Epoch: 3, Batch:160, Loss: 0.002558 (base: 0.002558, pseudo: 0.000000), prec: 1.6%, recall: 45.7%, Time: 531.4 (f0.681+b2.661), maxima: 0.740
+Train Epoch: 3, Batch:170, Loss: 0.002546 (base: 0.002546, pseudo: 0.000000), prec: 1.6%, recall: 46.4%, Time: 564.6 (f0.679+b2.662), maxima: 1.292
+Train Epoch: 3, Batch:180, Loss: 0.002521 (base: 0.002521, pseudo: 0.000000), prec: 1.6%, recall: 47.2%, Time: 597.7 (f0.678+b2.661), maxima: 1.110
+Train Epoch: 3, Batch:190, Loss: 0.002515 (base: 0.002515, pseudo: 0.000000), prec: 1.6%, recall: 47.7%, Time: 630.7 (f0.677+b2.660), maxima: 0.922
+Train Epoch: 3, Batch:200, Loss: 0.002504 (base: 0.002504, pseudo: 0.000000), prec: 1.6%, recall: 48.2%, Time: 663.8 (f0.676+b2.659), maxima: 1.364
+Train Epoch: 3, Batch:210, Loss: 0.002483 (base: 0.002483, pseudo: 0.000000), prec: 1.6%, recall: 48.4%, Time: 696.8 (f0.675+b2.659), maxima: 1.019
+Train Epoch: 3, Batch:220, Loss: 0.002462 (base: 0.002462, pseudo: 0.000000), prec: 1.6%, recall: 48.5%, Time: 730.0 (f0.674+b2.659), maxima: 1.221
+Train Epoch: 3, Batch:230, Loss: 0.002450 (base: 0.002450, pseudo: 0.000000), prec: 1.6%, recall: 48.8%, Time: 763.1 (f0.674+b2.659), maxima: 1.199
+Train Epoch: 3, Batch:240, Loss: 0.002453 (base: 0.002453, pseudo: 0.000000), prec: 1.6%, recall: 48.8%, Time: 796.3 (f0.673+b2.659), maxima: 1.172
+Train Epoch: 3, Batch:250, Loss: 0.002458 (base: 0.002458, pseudo: 0.000000), prec: 1.6%, recall: 48.7%, Time: 829.2 (f0.672+b2.658), maxima: 1.249
+Train Epoch: 3, Batch:260, Loss: 0.002458 (base: 0.002458, pseudo: 0.000000), prec: 1.6%, recall: 49.0%, Time: 862.3 (f0.672+b2.658), maxima: 1.208
+Train Epoch: 3, Batch:270, Loss: 0.002455 (base: 0.002455, pseudo: 0.000000), prec: 1.6%, recall: 49.2%, Time: 895.2 (f0.671+b2.657), maxima: 1.212
+Train Epoch: 3, Batch:280, Loss: 0.002444 (base: 0.002444, pseudo: 0.000000), prec: 1.6%, recall: 49.9%, Time: 928.3 (f0.671+b2.657), maxima: 1.255
+Train Epoch: 3, Batch:290, Loss: 0.002446 (base: 0.002446, pseudo: 0.000000), prec: 1.6%, recall: 50.2%, Time: 961.3 (f0.670+b2.656), maxima: 1.206
+Train Epoch: 3, Batch:300, Loss: 0.002435 (base: 0.002435, pseudo: 0.000000), prec: 1.6%, recall: 50.4%, Time: 994.3 (f0.670+b2.656), maxima: 1.236
+Train Epoch: 3, Batch:310, Loss: 0.002432 (base: 0.002432, pseudo: 0.000000), prec: 1.6%, recall: 50.6%, Time: 1027.5 (f0.669+b2.656), maxima: 0.950
+Train Epoch: 3, Batch:320, Loss: 0.002436 (base: 0.002436, pseudo: 0.000000), prec: 1.6%, recall: 50.4%, Time: 1060.5 (f0.669+b2.655), maxima: 1.253
+Train Epoch: 3, Batch:330, Loss: 0.002445 (base: 0.002445, pseudo: 0.000000), prec: 1.6%, recall: 50.3%, Time: 1093.4 (f0.669+b2.655), maxima: 0.883
+Train Epoch: 3, Batch:340, Loss: 0.002448 (base: 0.002448, pseudo: 0.000000), prec: 1.6%, recall: 50.4%, Time: 1126.4 (f0.668+b2.654), maxima: 0.824
+Train Epoch: 3, Batch:350, Loss: 0.002437 (base: 0.002437, pseudo: 0.000000), prec: 1.6%, recall: 50.6%, Time: 1159.4 (f0.668+b2.654), maxima: 1.176
+Train Epoch: 3, Batch:360, Loss: 0.002435 (base: 0.002435, pseudo: 0.000000), prec: 1.6%, recall: 50.9%, Time: 1192.2 (f0.667+b2.654), maxima: 1.183
+Train Epoch: 3, Batch:360, Loss: 0.002435 (base: 0.002435, pseudo: 0.000000), Precision: 1.6%, Recall: 50.9%, Time: 1192.417
+Testing...
+ 30%|███       | 3/10 [1:02:57<2:26:03, 1251.93s/it]moda: 70.8%, modp: 72.6%, precision: 96.5%, recall: 73.4%
+Test, Loss: 0.004280, Precision: 4.6%, Recall: 66.3, 	Time: 43.670
+Training...
+Train Epoch: 4, Batch:10, Loss: 0.001727 (base: 0.001727, pseudo: 0.000000), prec: 1.6%, recall: 62.9%, Time: 36.0 (f1.058+b2.937), maxima: 1.381
+Train Epoch: 4, Batch:20, Loss: 0.001796 (base: 0.001796, pseudo: 0.000000), prec: 1.6%, recall: 64.2%, Time: 69.1 (f0.848+b2.789), maxima: 1.250
+Train Epoch: 4, Batch:30, Loss: 0.001934 (base: 0.001934, pseudo: 0.000000), prec: 1.7%, recall: 64.7%, Time: 102.1 (f0.781+b2.738), maxima: 1.062
+Train Epoch: 4, Batch:40, Loss: 0.002060 (base: 0.002060, pseudo: 0.000000), prec: 1.6%, recall: 63.2%, Time: 135.0 (f0.749+b2.712), maxima: 0.904
+Train Epoch: 4, Batch:50, Loss: 0.002150 (base: 0.002150, pseudo: 0.000000), prec: 1.6%, recall: 61.7%, Time: 167.9 (f0.729+b2.696), maxima: 0.957
+Train Epoch: 4, Batch:60, Loss: 0.002153 (base: 0.002153, pseudo: 0.000000), prec: 1.6%, recall: 60.8%, Time: 200.9 (f0.717+b2.688), maxima: 1.460
+Train Epoch: 4, Batch:70, Loss: 0.002170 (base: 0.002170, pseudo: 0.000000), prec: 1.6%, recall: 59.8%, Time: 234.1 (f0.709+b2.684), maxima: 0.776
+Train Epoch: 4, Batch:80, Loss: 0.002260 (base: 0.002260, pseudo: 0.000000), prec: 1.6%, recall: 57.9%, Time: 267.1 (f0.702+b2.678), maxima: 0.941
+Train Epoch: 4, Batch:90, Loss: 0.002281 (base: 0.002281, pseudo: 0.000000), prec: 1.6%, recall: 57.3%, Time: 300.1 (f0.697+b2.675), maxima: 0.947
+Train Epoch: 4, Batch:100, Loss: 0.002287 (base: 0.002287, pseudo: 0.000000), prec: 1.6%, recall: 56.8%, Time: 333.1 (f0.693+b2.672), maxima: 0.976
+Train Epoch: 4, Batch:110, Loss: 0.002309 (base: 0.002309, pseudo: 0.000000), prec: 1.6%, recall: 57.0%, Time: 366.2 (f0.690+b2.670), maxima: 1.126
+Train Epoch: 4, Batch:120, Loss: 0.002298 (base: 0.002298, pseudo: 0.000000), prec: 1.6%, recall: 57.1%, Time: 399.4 (f0.687+b2.669), maxima: 1.316
+Train Epoch: 4, Batch:130, Loss: 0.002302 (base: 0.002302, pseudo: 0.000000), prec: 1.6%, recall: 57.5%, Time: 432.4 (f0.685+b2.667), maxima: 0.989
+Train Epoch: 4, Batch:140, Loss: 0.002311 (base: 0.002311, pseudo: 0.000000), prec: 1.6%, recall: 56.6%, Time: 465.5 (f0.683+b2.666), maxima: 1.059
+Train Epoch: 4, Batch:150, Loss: 0.002314 (base: 0.002314, pseudo: 0.000000), prec: 1.6%, recall: 56.8%, Time: 498.4 (f0.681+b2.664), maxima: 0.922
+Train Epoch: 4, Batch:160, Loss: 0.002283 (base: 0.002283, pseudo: 0.000000), prec: 1.6%, recall: 57.8%, Time: 531.4 (f0.679+b2.663), maxima: 1.242
+Train Epoch: 4, Batch:170, Loss: 0.002286 (base: 0.002286, pseudo: 0.000000), prec: 1.6%, recall: 58.0%, Time: 564.3 (f0.678+b2.661), maxima: 1.247
+Train Epoch: 4, Batch:180, Loss: 0.002274 (base: 0.002274, pseudo: 0.000000), prec: 1.6%, recall: 58.6%, Time: 597.3 (f0.677+b2.660), maxima: 1.402
+Train Epoch: 4, Batch:190, Loss: 0.002273 (base: 0.002273, pseudo: 0.000000), prec: 1.6%, recall: 58.8%, Time: 630.2 (f0.676+b2.659), maxima: 1.165
+Train Epoch: 4, Batch:200, Loss: 0.002289 (base: 0.002289, pseudo: 0.000000), prec: 1.6%, recall: 58.7%, Time: 663.3 (f0.675+b2.658), maxima: 1.416
+Train Epoch: 4, Batch:210, Loss: 0.002278 (base: 0.002278, pseudo: 0.000000), prec: 1.6%, recall: 58.8%, Time: 696.4 (f0.674+b2.658), maxima: 1.192
+Train Epoch: 4, Batch:220, Loss: 0.002258 (base: 0.002258, pseudo: 0.000000), prec: 1.6%, recall: 59.0%, Time: 729.5 (f0.673+b2.658), maxima: 1.509
+Train Epoch: 4, Batch:230, Loss: 0.002252 (base: 0.002252, pseudo: 0.000000), prec: 1.6%, recall: 59.3%, Time: 762.4 (f0.672+b2.657), maxima: 1.165
+Train Epoch: 4, Batch:240, Loss: 0.002253 (base: 0.002253, pseudo: 0.000000), prec: 1.6%, recall: 59.5%, Time: 795.4 (f0.672+b2.656), maxima: 1.461
+Train Epoch: 4, Batch:250, Loss: 0.002268 (base: 0.002268, pseudo: 0.000000), prec: 1.6%, recall: 59.4%, Time: 828.2 (f0.671+b2.655), maxima: 1.276
+Train Epoch: 4, Batch:260, Loss: 0.002265 (base: 0.002265, pseudo: 0.000000), prec: 1.6%, recall: 59.5%, Time: 861.2 (f0.670+b2.655), maxima: 1.351
+Train Epoch: 4, Batch:270, Loss: 0.002255 (base: 0.002255, pseudo: 0.000000), prec: 1.6%, recall: 59.5%, Time: 894.3 (f0.670+b2.654), maxima: 1.070
+Train Epoch: 4, Batch:280, Loss: 0.002245 (base: 0.002245, pseudo: 0.000000), prec: 1.6%, recall: 59.9%, Time: 927.4 (f0.669+b2.654), maxima: 1.562
+Train Epoch: 4, Batch:290, Loss: 0.002246 (base: 0.002246, pseudo: 0.000000), prec: 1.6%, recall: 60.0%, Time: 960.5 (f0.669+b2.655), maxima: 1.049
+Train Epoch: 4, Batch:300, Loss: 0.002232 (base: 0.002232, pseudo: 0.000000), prec: 1.6%, recall: 60.2%, Time: 993.7 (f0.669+b2.655), maxima: 0.914
+Train Epoch: 4, Batch:310, Loss: 0.002235 (base: 0.002235, pseudo: 0.000000), prec: 1.6%, recall: 60.5%, Time: 1026.7 (f0.668+b2.654), maxima: 1.225
+Train Epoch: 4, Batch:320, Loss: 0.002241 (base: 0.002241, pseudo: 0.000000), prec: 1.6%, recall: 60.1%, Time: 1059.7 (f0.668+b2.654), maxima: 1.188
+Train Epoch: 4, Batch:330, Loss: 0.002230 (base: 0.002230, pseudo: 0.000000), prec: 1.6%, recall: 60.5%, Time: 1092.7 (f0.668+b2.654), maxima: 1.029
+Train Epoch: 4, Batch:340, Loss: 0.002233 (base: 0.002233, pseudo: 0.000000), prec: 1.6%, recall: 60.5%, Time: 1125.7 (f0.667+b2.653), maxima: 0.997
+Train Epoch: 4, Batch:350, Loss: 0.002228 (base: 0.002228, pseudo: 0.000000), prec: 1.6%, recall: 60.7%, Time: 1158.7 (f0.667+b2.653), maxima: 1.260
+Train Epoch: 4, Batch:360, Loss: 0.002218 (base: 0.002218, pseudo: 0.000000), prec: 1.6%, recall: 60.9%, Time: 1191.7 (f0.667+b2.653), maxima: 1.298
+Train Epoch: 4, Batch:360, Loss: 0.002218 (base: 0.002218, pseudo: 0.000000), Precision: 1.6%, Recall: 60.9%, Time: 1191.904
+Testing...
+ 40%|████      | 4/10 [1:23:33<2:04:34, 1245.81s/it]moda: 78.3%, modp: 73.7%, precision: 94.5%, recall: 83.1%
+Test, Loss: 0.003778, Precision: 4.2%, Recall: 77.5, 	Time: 43.708
+Training...
+Train Epoch: 5, Batch:10, Loss: 0.001699 (base: 0.001699, pseudo: 0.000000), prec: 1.6%, recall: 70.1%, Time: 36.4 (f1.091+b2.949), maxima: 1.469
+Train Epoch: 5, Batch:20, Loss: 0.002110 (base: 0.002110, pseudo: 0.000000), prec: 1.5%, recall: 60.4%, Time: 69.5 (f0.864+b2.792), maxima: 1.346
+Train Epoch: 5, Batch:30, Loss: 0.002102 (base: 0.002102, pseudo: 0.000000), prec: 1.6%, recall: 63.3%, Time: 102.3 (f0.790+b2.737), maxima: 1.005
+Train Epoch: 5, Batch:40, Loss: 0.002073 (base: 0.002073, pseudo: 0.000000), prec: 1.5%, recall: 62.7%, Time: 135.4 (f0.756+b2.715), maxima: 1.092
+Train Epoch: 5, Batch:50, Loss: 0.002099 (base: 0.002099, pseudo: 0.000000), prec: 1.5%, recall: 64.7%, Time: 168.6 (f0.736+b2.704), maxima: 1.135
+Train Epoch: 5, Batch:60, Loss: 0.002083 (base: 0.002083, pseudo: 0.000000), prec: 1.5%, recall: 64.9%, Time: 201.6 (f0.723+b2.694), maxima: 1.056
+Train Epoch: 5, Batch:70, Loss: 0.002088 (base: 0.002088, pseudo: 0.000000), prec: 1.5%, recall: 65.9%, Time: 234.6 (f0.713+b2.687), maxima: 1.281
+Train Epoch: 5, Batch:80, Loss: 0.002076 (base: 0.002076, pseudo: 0.000000), prec: 1.5%, recall: 66.5%, Time: 267.6 (f0.706+b2.682), maxima: 1.406
+Train Epoch: 5, Batch:90, Loss: 0.002070 (base: 0.002070, pseudo: 0.000000), prec: 1.5%, recall: 66.4%, Time: 300.7 (f0.700+b2.678), maxima: 1.288
+Train Epoch: 5, Batch:100, Loss: 0.002048 (base: 0.002048, pseudo: 0.000000), prec: 1.5%, recall: 66.5%, Time: 333.7 (f0.696+b2.675), maxima: 0.952
+Train Epoch: 5, Batch:110, Loss: 0.002066 (base: 0.002066, pseudo: 0.000000), prec: 1.5%, recall: 66.3%, Time: 366.7 (f0.692+b2.672), maxima: 1.145
+Train Epoch: 5, Batch:120, Loss: 0.002062 (base: 0.002062, pseudo: 0.000000), prec: 1.5%, recall: 66.2%, Time: 399.6 (f0.689+b2.669), maxima: 0.776
+Train Epoch: 5, Batch:130, Loss: 0.002073 (base: 0.002073, pseudo: 0.000000), prec: 1.5%, recall: 66.0%, Time: 432.5 (f0.686+b2.667), maxima: 1.211
+Train Epoch: 5, Batch:140, Loss: 0.002075 (base: 0.002075, pseudo: 0.000000), prec: 1.5%, recall: 65.8%, Time: 465.5 (f0.684+b2.665), maxima: 0.953
+Train Epoch: 5, Batch:150, Loss: 0.002094 (base: 0.002094, pseudo: 0.000000), prec: 1.5%, recall: 65.9%, Time: 498.5 (f0.682+b2.663), maxima: 0.956
+Train Epoch: 5, Batch:160, Loss: 0.002099 (base: 0.002099, pseudo: 0.000000), prec: 1.5%, recall: 65.8%, Time: 531.5 (f0.680+b2.662), maxima: 0.983
+Train Epoch: 5, Batch:170, Loss: 0.002088 (base: 0.002088, pseudo: 0.000000), prec: 1.5%, recall: 65.8%, Time: 564.4 (f0.679+b2.660), maxima: 1.134
+Train Epoch: 5, Batch:180, Loss: 0.002107 (base: 0.002107, pseudo: 0.000000), prec: 1.5%, recall: 65.4%, Time: 597.3 (f0.678+b2.659), maxima: 1.176
+Train Epoch: 5, Batch:190, Loss: 0.002096 (base: 0.002096, pseudo: 0.000000), prec: 1.5%, recall: 65.5%, Time: 630.3 (f0.677+b2.658), maxima: 1.360
+Train Epoch: 5, Batch:200, Loss: 0.002081 (base: 0.002081, pseudo: 0.000000), prec: 1.6%, recall: 66.1%, Time: 663.3 (f0.675+b2.657), maxima: 1.415
+Train Epoch: 5, Batch:210, Loss: 0.002089 (base: 0.002089, pseudo: 0.000000), prec: 1.5%, recall: 65.8%, Time: 696.2 (f0.674+b2.657), maxima: 1.165
+Train Epoch: 5, Batch:220, Loss: 0.002086 (base: 0.002086, pseudo: 0.000000), prec: 1.5%, recall: 66.0%, Time: 729.2 (f0.674+b2.656), maxima: 1.203
+Train Epoch: 5, Batch:230, Loss: 0.002093 (base: 0.002093, pseudo: 0.000000), prec: 1.6%, recall: 66.1%, Time: 762.3 (f0.673+b2.656), maxima: 1.313
+Train Epoch: 5, Batch:240, Loss: 0.002086 (base: 0.002086, pseudo: 0.000000), prec: 1.6%, recall: 66.1%, Time: 795.2 (f0.672+b2.655), maxima: 1.249
+Train Epoch: 5, Batch:250, Loss: 0.002079 (base: 0.002079, pseudo: 0.000000), prec: 1.6%, recall: 66.2%, Time: 828.2 (f0.671+b2.655), maxima: 1.220
+Train Epoch: 5, Batch:260, Loss: 0.002078 (base: 0.002078, pseudo: 0.000000), prec: 1.6%, recall: 66.2%, Time: 861.3 (f0.671+b2.655), maxima: 1.278
+Train Epoch: 5, Batch:270, Loss: 0.002061 (base: 0.002061, pseudo: 0.000000), prec: 1.6%, recall: 66.6%, Time: 894.5 (f0.670+b2.655), maxima: 1.295
+Train Epoch: 5, Batch:280, Loss: 0.002084 (base: 0.002084, pseudo: 0.000000), prec: 1.6%, recall: 66.3%, Time: 927.7 (f0.670+b2.655), maxima: 1.311
+Train Epoch: 5, Batch:290, Loss: 0.002078 (base: 0.002078, pseudo: 0.000000), prec: 1.6%, recall: 66.2%, Time: 960.8 (f0.670+b2.655), maxima: 1.167
+Train Epoch: 5, Batch:300, Loss: 0.002064 (base: 0.002064, pseudo: 0.000000), prec: 1.6%, recall: 66.6%, Time: 993.8 (f0.669+b2.655), maxima: 1.014
+Train Epoch: 5, Batch:310, Loss: 0.002073 (base: 0.002073, pseudo: 0.000000), prec: 1.6%, recall: 66.7%, Time: 1026.7 (f0.669+b2.654), maxima: 0.976
+Train Epoch: 5, Batch:320, Loss: 0.002066 (base: 0.002066, pseudo: 0.000000), prec: 1.6%, recall: 66.7%, Time: 1059.7 (f0.668+b2.654), maxima: 1.074
+Train Epoch: 5, Batch:330, Loss: 0.002060 (base: 0.002060, pseudo: 0.000000), prec: 1.6%, recall: 66.9%, Time: 1092.7 (f0.668+b2.653), maxima: 1.288
+Train Epoch: 5, Batch:340, Loss: 0.002062 (base: 0.002062, pseudo: 0.000000), prec: 1.6%, recall: 66.8%, Time: 1125.7 (f0.667+b2.653), maxima: 1.328
+Train Epoch: 5, Batch:350, Loss: 0.002064 (base: 0.002064, pseudo: 0.000000), prec: 1.6%, recall: 66.9%, Time: 1158.6 (f0.667+b2.653), maxima: 1.332
+Train Epoch: 5, Batch:360, Loss: 0.002064 (base: 0.002064, pseudo: 0.000000), prec: 1.6%, recall: 66.7%, Time: 1191.6 (f0.667+b2.652), maxima: 1.298
+Train Epoch: 5, Batch:360, Loss: 0.002064 (base: 0.002064, pseudo: 0.000000), Precision: 1.6%, Recall: 66.7%, Time: 1191.735
+Testing...
+ 50%|█████     | 5/10 [1:44:09<1:43:30, 1242.19s/it]moda: 81.5%, modp: 72.3%, precision: 93.9%, recall: 87.2%
+Test, Loss: 0.003557, Precision: 4.1%, Recall: 82.2, 	Time: 43.222
+Training...
+Train Epoch: 6, Batch:10, Loss: 0.001855 (base: 0.001855, pseudo: 0.000000), prec: 1.7%, recall: 66.2%, Time: 36.5 (f1.115+b2.941), maxima: 1.295
+Train Epoch: 6, Batch:20, Loss: 0.001928 (base: 0.001928, pseudo: 0.000000), prec: 1.5%, recall: 65.4%, Time: 69.7 (f0.875+b2.793), maxima: 1.243
+Train Epoch: 6, Batch:30, Loss: 0.001926 (base: 0.001926, pseudo: 0.000000), prec: 1.6%, recall: 65.5%, Time: 102.7 (f0.799+b2.741), maxima: 1.177
+Train Epoch: 6, Batch:40, Loss: 0.001878 (base: 0.001878, pseudo: 0.000000), prec: 1.6%, recall: 67.8%, Time: 135.5 (f0.761+b2.713), maxima: 1.113
+Train Epoch: 6, Batch:50, Loss: 0.001873 (base: 0.001873, pseudo: 0.000000), prec: 1.6%, recall: 68.1%, Time: 168.6 (f0.739+b2.701), maxima: 1.112
+Train Epoch: 6, Batch:60, Loss: 0.001870 (base: 0.001870, pseudo: 0.000000), prec: 1.5%, recall: 66.9%, Time: 201.6 (f0.726+b2.692), maxima: 1.169
+Train Epoch: 6, Batch:70, Loss: 0.001853 (base: 0.001853, pseudo: 0.000000), prec: 1.5%, recall: 68.0%, Time: 234.6 (f0.715+b2.685), maxima: 1.141
+Train Epoch: 6, Batch:80, Loss: 0.001916 (base: 0.001916, pseudo: 0.000000), prec: 1.5%, recall: 66.1%, Time: 267.6 (f0.708+b2.679), maxima: 1.046
+Train Epoch: 6, Batch:90, Loss: 0.001908 (base: 0.001908, pseudo: 0.000000), prec: 1.5%, recall: 67.6%, Time: 300.5 (f0.702+b2.675), maxima: 1.126
+Train Epoch: 6, Batch:100, Loss: 0.001898 (base: 0.001898, pseudo: 0.000000), prec: 1.5%, recall: 68.4%, Time: 333.4 (f0.697+b2.671), maxima: 1.078
+Train Epoch: 6, Batch:110, Loss: 0.001928 (base: 0.001928, pseudo: 0.000000), prec: 1.5%, recall: 68.7%, Time: 366.3 (f0.693+b2.668), maxima: 1.265
+Train Epoch: 6, Batch:120, Loss: 0.001940 (base: 0.001940, pseudo: 0.000000), prec: 1.6%, recall: 69.0%, Time: 399.2 (f0.690+b2.665), maxima: 1.183
+Train Epoch: 6, Batch:130, Loss: 0.001946 (base: 0.001946, pseudo: 0.000000), prec: 1.5%, recall: 68.8%, Time: 432.1 (f0.687+b2.663), maxima: 1.060
+Train Epoch: 6, Batch:140, Loss: 0.001925 (base: 0.001925, pseudo: 0.000000), prec: 1.5%, recall: 69.2%, Time: 465.3 (f0.685+b2.663), maxima: 1.047
+Train Epoch: 6, Batch:150, Loss: 0.001956 (base: 0.001956, pseudo: 0.000000), prec: 1.5%, recall: 68.7%, Time: 498.4 (f0.683+b2.662), maxima: 1.066
+Train Epoch: 6, Batch:160, Loss: 0.001940 (base: 0.001940, pseudo: 0.000000), prec: 1.5%, recall: 69.2%, Time: 531.4 (f0.681+b2.661), maxima: 1.007
+Train Epoch: 6, Batch:170, Loss: 0.001927 (base: 0.001927, pseudo: 0.000000), prec: 1.5%, recall: 69.5%, Time: 564.4 (f0.680+b2.660), maxima: 1.153
+Train Epoch: 6, Batch:180, Loss: 0.001910 (base: 0.001910, pseudo: 0.000000), prec: 1.6%, recall: 70.3%, Time: 597.3 (f0.678+b2.659), maxima: 1.346
+Train Epoch: 6, Batch:190, Loss: 0.001905 (base: 0.001905, pseudo: 0.000000), prec: 1.6%, recall: 70.6%, Time: 630.5 (f0.677+b2.659), maxima: 1.126
+Train Epoch: 6, Batch:200, Loss: 0.001913 (base: 0.001913, pseudo: 0.000000), prec: 1.6%, recall: 70.2%, Time: 663.4 (f0.676+b2.658), maxima: 1.201
+Train Epoch: 6, Batch:210, Loss: 0.001926 (base: 0.001926, pseudo: 0.000000), prec: 1.6%, recall: 70.1%, Time: 696.4 (f0.675+b2.657), maxima: 1.295
+Train Epoch: 6, Batch:220, Loss: 0.001921 (base: 0.001921, pseudo: 0.000000), prec: 1.6%, recall: 70.0%, Time: 729.4 (f0.674+b2.657), maxima: 1.336
+Train Epoch: 6, Batch:230, Loss: 0.001927 (base: 0.001927, pseudo: 0.000000), prec: 1.6%, recall: 70.1%, Time: 762.3 (f0.673+b2.656), maxima: 0.972
+Train Epoch: 6, Batch:240, Loss: 0.001919 (base: 0.001919, pseudo: 0.000000), prec: 1.6%, recall: 70.5%, Time: 795.7 (f0.673+b2.657), maxima: 0.999
+Train Epoch: 6, Batch:250, Loss: 0.001918 (base: 0.001918, pseudo: 0.000000), prec: 1.6%, recall: 70.4%, Time: 828.8 (f0.672+b2.657), maxima: 1.235
+Train Epoch: 6, Batch:260, Loss: 0.001921 (base: 0.001921, pseudo: 0.000000), prec: 1.6%, recall: 70.2%, Time: 861.8 (f0.671+b2.656), maxima: 1.161
+Train Epoch: 6, Batch:270, Loss: 0.001913 (base: 0.001913, pseudo: 0.000000), prec: 1.6%, recall: 70.5%, Time: 894.8 (f0.671+b2.656), maxima: 1.222
+Train Epoch: 6, Batch:280, Loss: 0.001917 (base: 0.001917, pseudo: 0.000000), prec: 1.6%, recall: 70.5%, Time: 927.8 (f0.670+b2.655), maxima: 1.231
+Train Epoch: 6, Batch:290, Loss: 0.001911 (base: 0.001911, pseudo: 0.000000), prec: 1.6%, recall: 70.8%, Time: 960.8 (f0.670+b2.655), maxima: 1.284
+Train Epoch: 6, Batch:300, Loss: 0.001932 (base: 0.001932, pseudo: 0.000000), prec: 1.6%, recall: 70.6%, Time: 994.0 (f0.669+b2.655), maxima: 1.282
+Train Epoch: 6, Batch:310, Loss: 0.001941 (base: 0.001941, pseudo: 0.000000), prec: 1.6%, recall: 70.5%, Time: 1027.1 (f0.669+b2.655), maxima: 1.318
+Train Epoch: 6, Batch:320, Loss: 0.001947 (base: 0.001947, pseudo: 0.000000), prec: 1.6%, recall: 70.3%, Time: 1060.1 (f0.669+b2.655), maxima: 1.062
+Train Epoch: 6, Batch:330, Loss: 0.001953 (base: 0.001953, pseudo: 0.000000), prec: 1.6%, recall: 70.2%, Time: 1093.3 (f0.668+b2.655), maxima: 1.217
+Train Epoch: 6, Batch:340, Loss: 0.001958 (base: 0.001958, pseudo: 0.000000), prec: 1.6%, recall: 70.2%, Time: 1126.4 (f0.668+b2.655), maxima: 1.116
+Train Epoch: 6, Batch:350, Loss: 0.001954 (base: 0.001954, pseudo: 0.000000), prec: 1.6%, recall: 70.4%, Time: 1159.5 (f0.667+b2.655), maxima: 1.272
+Train Epoch: 6, Batch:360, Loss: 0.001950 (base: 0.001950, pseudo: 0.000000), prec: 1.6%, recall: 70.2%, Time: 1192.6 (f0.667+b2.655), maxima: 1.221
+Train Epoch: 6, Batch:360, Loss: 0.001950 (base: 0.001950, pseudo: 0.000000), Precision: 1.6%, Recall: 70.2%, Time: 1192.798
+Testing...
+ 60%|██████    | 6/10 [2:04:47<1:22:43, 1240.85s/it]moda: 80.4%, modp: 73.6%, precision: 87.5%, recall: 93.7%
+Test, Loss: 0.003548, Precision: 3.0%, Recall: 89.6, 	Time: 43.732
+Training...
+Train Epoch: 7, Batch:10, Loss: 0.001814 (base: 0.001814, pseudo: 0.000000), prec: 1.5%, recall: 69.6%, Time: 36.9 (f1.162+b2.943), maxima: 1.423
+Train Epoch: 7, Batch:20, Loss: 0.002075 (base: 0.002075, pseudo: 0.000000), prec: 1.6%, recall: 67.6%, Time: 70.0 (f0.897+b2.788), maxima: 1.149
+Train Epoch: 7, Batch:30, Loss: 0.001961 (base: 0.001961, pseudo: 0.000000), prec: 1.6%, recall: 70.7%, Time: 102.8 (f0.812+b2.731), maxima: 1.188
+Train Epoch: 7, Batch:40, Loss: 0.001941 (base: 0.001941, pseudo: 0.000000), prec: 1.6%, recall: 72.6%, Time: 135.7 (f0.771+b2.709), maxima: 1.189
+Train Epoch: 7, Batch:50, Loss: 0.001981 (base: 0.001981, pseudo: 0.000000), prec: 1.6%, recall: 72.4%, Time: 168.8 (f0.748+b2.696), maxima: 1.202
+Train Epoch: 7, Batch:60, Loss: 0.002046 (base: 0.002046, pseudo: 0.000000), prec: 1.6%, recall: 71.5%, Time: 201.9 (f0.733+b2.689), maxima: 0.980
+Train Epoch: 7, Batch:70, Loss: 0.002015 (base: 0.002015, pseudo: 0.000000), prec: 1.6%, recall: 72.3%, Time: 234.9 (f0.721+b2.683), maxima: 1.444
+Train Epoch: 7, Batch:80, Loss: 0.002018 (base: 0.002018, pseudo: 0.000000), prec: 1.6%, recall: 72.1%, Time: 267.9 (f0.713+b2.678), maxima: 1.268
+Train Epoch: 7, Batch:90, Loss: 0.001953 (base: 0.001953, pseudo: 0.000000), prec: 1.6%, recall: 72.8%, Time: 300.9 (f0.706+b2.675), maxima: 1.101
+Train Epoch: 7, Batch:100, Loss: 0.001955 (base: 0.001955, pseudo: 0.000000), prec: 1.6%, recall: 72.4%, Time: 333.9 (f0.701+b2.672), maxima: 1.087
+Train Epoch: 7, Batch:110, Loss: 0.001927 (base: 0.001927, pseudo: 0.000000), prec: 1.6%, recall: 73.0%, Time: 366.8 (f0.696+b2.669), maxima: 1.282
+Train Epoch: 7, Batch:120, Loss: 0.001904 (base: 0.001904, pseudo: 0.000000), prec: 1.6%, recall: 72.6%, Time: 399.7 (f0.693+b2.666), maxima: 1.352
+Train Epoch: 7, Batch:130, Loss: 0.001893 (base: 0.001893, pseudo: 0.000000), prec: 1.6%, recall: 72.5%, Time: 432.7 (f0.690+b2.664), maxima: 1.003
+Train Epoch: 7, Batch:140, Loss: 0.001899 (base: 0.001899, pseudo: 0.000000), prec: 1.6%, recall: 72.3%, Time: 465.7 (f0.687+b2.663), maxima: 1.052
+Train Epoch: 7, Batch:150, Loss: 0.001896 (base: 0.001896, pseudo: 0.000000), prec: 1.6%, recall: 72.8%, Time: 498.8 (f0.685+b2.663), maxima: 1.170
+Train Epoch: 7, Batch:160, Loss: 0.001895 (base: 0.001895, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 531.8 (f0.683+b2.661), maxima: 1.084
+Train Epoch: 7, Batch:170, Loss: 0.001886 (base: 0.001886, pseudo: 0.000000), prec: 1.6%, recall: 73.0%, Time: 564.8 (f0.681+b2.661), maxima: 1.175
+Train Epoch: 7, Batch:180, Loss: 0.001874 (base: 0.001874, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 597.8 (f0.680+b2.660), maxima: 1.138
+Train Epoch: 7, Batch:190, Loss: 0.001872 (base: 0.001872, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 630.9 (f0.679+b2.659), maxima: 1.065
+Train Epoch: 7, Batch:200, Loss: 0.001860 (base: 0.001860, pseudo: 0.000000), prec: 1.6%, recall: 73.2%, Time: 663.8 (f0.678+b2.658), maxima: 1.290
+Train Epoch: 7, Batch:210, Loss: 0.001857 (base: 0.001857, pseudo: 0.000000), prec: 1.6%, recall: 73.6%, Time: 696.9 (f0.677+b2.658), maxima: 1.066
+Train Epoch: 7, Batch:220, Loss: 0.001871 (base: 0.001871, pseudo: 0.000000), prec: 1.6%, recall: 73.2%, Time: 730.3 (f0.676+b2.659), maxima: 1.084
+Train Epoch: 7, Batch:230, Loss: 0.001869 (base: 0.001869, pseudo: 0.000000), prec: 1.6%, recall: 73.2%, Time: 763.4 (f0.675+b2.658), maxima: 1.245
+Train Epoch: 7, Batch:240, Loss: 0.001869 (base: 0.001869, pseudo: 0.000000), prec: 1.6%, recall: 73.3%, Time: 796.4 (f0.674+b2.658), maxima: 1.270
+Train Epoch: 7, Batch:250, Loss: 0.001875 (base: 0.001875, pseudo: 0.000000), prec: 1.6%, recall: 73.2%, Time: 829.4 (f0.674+b2.657), maxima: 1.167
+Train Epoch: 7, Batch:260, Loss: 0.001871 (base: 0.001871, pseudo: 0.000000), prec: 1.6%, recall: 73.4%, Time: 862.4 (f0.673+b2.657), maxima: 1.011
+Train Epoch: 7, Batch:270, Loss: 0.001885 (base: 0.001885, pseudo: 0.000000), prec: 1.6%, recall: 73.3%, Time: 895.5 (f0.672+b2.657), maxima: 1.035
+Train Epoch: 7, Batch:280, Loss: 0.001889 (base: 0.001889, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 928.6 (f0.672+b2.657), maxima: 1.255
+Train Epoch: 7, Batch:290, Loss: 0.001890 (base: 0.001890, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 961.6 (f0.671+b2.656), maxima: 1.266
+Train Epoch: 7, Batch:300, Loss: 0.001872 (base: 0.001872, pseudo: 0.000000), prec: 1.6%, recall: 73.3%, Time: 994.6 (f0.671+b2.656), maxima: 1.045
+Train Epoch: 7, Batch:310, Loss: 0.001879 (base: 0.001879, pseudo: 0.000000), prec: 1.6%, recall: 73.0%, Time: 1027.6 (f0.670+b2.655), maxima: 1.279
+Train Epoch: 7, Batch:320, Loss: 0.001885 (base: 0.001885, pseudo: 0.000000), prec: 1.6%, recall: 73.0%, Time: 1060.6 (f0.670+b2.655), maxima: 1.212
+Train Epoch: 7, Batch:330, Loss: 0.001865 (base: 0.001865, pseudo: 0.000000), prec: 1.6%, recall: 73.3%, Time: 1093.6 (f0.669+b2.655), maxima: 1.141
+Train Epoch: 7, Batch:340, Loss: 0.001860 (base: 0.001860, pseudo: 0.000000), prec: 1.6%, recall: 73.1%, Time: 1126.6 (f0.669+b2.655), maxima: 1.176
+Train Epoch: 7, Batch:350, Loss: 0.001867 (base: 0.001867, pseudo: 0.000000), prec: 1.6%, recall: 72.8%, Time: 1159.8 (f0.668+b2.655), maxima: 1.263
+Train Epoch: 7, Batch:360, Loss: 0.001864 (base: 0.001864, pseudo: 0.000000), prec: 1.6%, recall: 72.8%, Time: 1192.9 (f0.668+b2.655), maxima: 1.155
+Train Epoch: 7, Batch:360, Loss: 0.001864 (base: 0.001864, pseudo: 0.000000), Precision: 1.6%, Recall: 72.8%, Time: 1193.016
+Testing...
+ 70%|███████   | 7/10 [2:25:25<1:01:59, 1239.72s/it]moda: 83.1%, modp: 73.1%, precision: 91.9%, recall: 91.1%
+Test, Loss: 0.003432, Precision: 3.4%, Recall: 86.5, 	Time: 43.512
+Training...
+Train Epoch: 8, Batch:10, Loss: 0.002213 (base: 0.002213, pseudo: 0.000000), prec: 1.7%, recall: 76.0%, Time: 36.4 (f1.106+b2.936), maxima: 0.914
+Train Epoch: 8, Batch:20, Loss: 0.002243 (base: 0.002243, pseudo: 0.000000), prec: 1.7%, recall: 74.6%, Time: 69.4 (f0.869+b2.784), maxima: 1.125
+Train Epoch: 8, Batch:30, Loss: 0.002015 (base: 0.002015, pseudo: 0.000000), prec: 1.7%, recall: 75.9%, Time: 102.3 (f0.793+b2.734), maxima: 1.048
+Train Epoch: 8, Batch:40, Loss: 0.001938 (base: 0.001938, pseudo: 0.000000), prec: 1.6%, recall: 75.2%, Time: 135.2 (f0.757+b2.709), maxima: 1.007
+Train Epoch: 8, Batch:50, Loss: 0.001897 (base: 0.001897, pseudo: 0.000000), prec: 1.6%, recall: 74.2%, Time: 168.3 (f0.737+b2.698), maxima: 1.403
+Train Epoch: 8, Batch:60, Loss: 0.001811 (base: 0.001811, pseudo: 0.000000), prec: 1.6%, recall: 75.3%, Time: 201.3 (f0.723+b2.689), maxima: 1.194
+Train Epoch: 8, Batch:70, Loss: 0.001778 (base: 0.001778, pseudo: 0.000000), prec: 1.6%, recall: 76.1%, Time: 234.4 (f0.713+b2.684), maxima: 1.163
+Train Epoch: 8, Batch:80, Loss: 0.001723 (base: 0.001723, pseudo: 0.000000), prec: 1.6%, recall: 76.1%, Time: 267.2 (f0.705+b2.677), maxima: 1.217
+Train Epoch: 8, Batch:90, Loss: 0.001678 (base: 0.001678, pseudo: 0.000000), prec: 1.6%, recall: 76.9%, Time: 300.1 (f0.700+b2.672), maxima: 1.102
+Train Epoch: 8, Batch:100, Loss: 0.001659 (base: 0.001659, pseudo: 0.000000), prec: 1.6%, recall: 77.2%, Time: 333.0 (f0.695+b2.668), maxima: 1.162
+Train Epoch: 8, Batch:110, Loss: 0.001664 (base: 0.001664, pseudo: 0.000000), prec: 1.6%, recall: 77.3%, Time: 366.0 (f0.691+b2.667), maxima: 1.058
+Train Epoch: 8, Batch:120, Loss: 0.001661 (base: 0.001661, pseudo: 0.000000), prec: 1.6%, recall: 77.4%, Time: 398.9 (f0.688+b2.664), maxima: 0.930
+Train Epoch: 8, Batch:130, Loss: 0.001698 (base: 0.001698, pseudo: 0.000000), prec: 1.6%, recall: 77.0%, Time: 431.9 (f0.685+b2.663), maxima: 1.033
+Train Epoch: 8, Batch:140, Loss: 0.001698 (base: 0.001698, pseudo: 0.000000), prec: 1.6%, recall: 76.8%, Time: 464.9 (f0.683+b2.662), maxima: 1.403
+Train Epoch: 8, Batch:150, Loss: 0.001701 (base: 0.001701, pseudo: 0.000000), prec: 1.6%, recall: 76.7%, Time: 497.9 (f0.681+b2.661), maxima: 1.140
+Train Epoch: 8, Batch:160, Loss: 0.001697 (base: 0.001697, pseudo: 0.000000), prec: 1.6%, recall: 76.8%, Time: 530.9 (f0.680+b2.660), maxima: 1.089
+Train Epoch: 8, Batch:170, Loss: 0.001701 (base: 0.001701, pseudo: 0.000000), prec: 1.6%, recall: 76.6%, Time: 563.8 (f0.678+b2.658), maxima: 1.403
+Train Epoch: 8, Batch:180, Loss: 0.001701 (base: 0.001701, pseudo: 0.000000), prec: 1.6%, recall: 76.3%, Time: 596.7 (f0.677+b2.657), maxima: 1.052
+Train Epoch: 8, Batch:190, Loss: 0.001697 (base: 0.001697, pseudo: 0.000000), prec: 1.6%, recall: 76.4%, Time: 629.5 (f0.675+b2.655), maxima: 1.002
+Train Epoch: 8, Batch:200, Loss: 0.001694 (base: 0.001694, pseudo: 0.000000), prec: 1.6%, recall: 76.6%, Time: 662.7 (f0.675+b2.656), maxima: 1.111
+Train Epoch: 8, Batch:210, Loss: 0.001708 (base: 0.001708, pseudo: 0.000000), prec: 1.6%, recall: 76.4%, Time: 695.9 (f0.674+b2.656), maxima: 1.125
+Train Epoch: 8, Batch:220, Loss: 0.001710 (base: 0.001710, pseudo: 0.000000), prec: 1.6%, recall: 76.4%, Time: 728.9 (f0.673+b2.656), maxima: 1.235
+Train Epoch: 8, Batch:230, Loss: 0.001725 (base: 0.001725, pseudo: 0.000000), prec: 1.6%, recall: 75.9%, Time: 762.1 (f0.672+b2.656), maxima: 1.130
+Train Epoch: 8, Batch:240, Loss: 0.001744 (base: 0.001744, pseudo: 0.000000), prec: 1.6%, recall: 75.8%, Time: 795.3 (f0.672+b2.656), maxima: 0.876
+Train Epoch: 8, Batch:250, Loss: 0.001742 (base: 0.001742, pseudo: 0.000000), prec: 1.6%, recall: 75.9%, Time: 828.3 (f0.671+b2.656), maxima: 1.524
+Train Epoch: 8, Batch:260, Loss: 0.001766 (base: 0.001766, pseudo: 0.000000), prec: 1.6%, recall: 75.5%, Time: 861.3 (f0.670+b2.655), maxima: 1.315
+Train Epoch: 8, Batch:270, Loss: 0.001776 (base: 0.001776, pseudo: 0.000000), prec: 1.6%, recall: 75.4%, Time: 894.4 (f0.670+b2.655), maxima: 1.220
+Train Epoch: 8, Batch:280, Loss: 0.001777 (base: 0.001777, pseudo: 0.000000), prec: 1.6%, recall: 75.4%, Time: 927.4 (f0.669+b2.655), maxima: 1.071
+Train Epoch: 8, Batch:290, Loss: 0.001779 (base: 0.001779, pseudo: 0.000000), prec: 1.6%, recall: 75.5%, Time: 960.4 (f0.669+b2.655), maxima: 1.344
+Train Epoch: 8, Batch:300, Loss: 0.001781 (base: 0.001781, pseudo: 0.000000), prec: 1.6%, recall: 75.3%, Time: 993.4 (f0.668+b2.654), maxima: 1.030
+Train Epoch: 8, Batch:310, Loss: 0.001787 (base: 0.001787, pseudo: 0.000000), prec: 1.6%, recall: 75.4%, Time: 1026.3 (f0.668+b2.654), maxima: 1.190
+Train Epoch: 8, Batch:320, Loss: 0.001781 (base: 0.001781, pseudo: 0.000000), prec: 1.6%, recall: 75.4%, Time: 1059.2 (f0.667+b2.653), maxima: 1.033
+Train Epoch: 8, Batch:330, Loss: 0.001774 (base: 0.001774, pseudo: 0.000000), prec: 1.6%, recall: 75.6%, Time: 1092.1 (f0.667+b2.653), maxima: 1.058
+Train Epoch: 8, Batch:340, Loss: 0.001774 (base: 0.001774, pseudo: 0.000000), prec: 1.6%, recall: 75.6%, Time: 1125.1 (f0.666+b2.653), maxima: 1.069
+Train Epoch: 8, Batch:350, Loss: 0.001762 (base: 0.001762, pseudo: 0.000000), prec: 1.6%, recall: 76.0%, Time: 1158.3 (f0.666+b2.653), maxima: 1.063
+Train Epoch: 8, Batch:360, Loss: 0.001758 (base: 0.001758, pseudo: 0.000000), prec: 1.6%, recall: 76.1%, Time: 1191.3 (f0.665+b2.653), maxima: 1.210
+Train Epoch: 8, Batch:360, Loss: 0.001758 (base: 0.001758, pseudo: 0.000000), Precision: 1.6%, Recall: 76.1%, Time: 1191.474
+Testing...
+ 80%|████████  | 8/10 [2:46:00<41:16, 1238.43s/it]  moda: 85.4%, modp: 74.0%, precision: 93.8%, recall: 91.5%
+Test, Loss: 0.003242, Precision: 3.5%, Recall: 87.5, 	Time: 43.358
+Training...
+Train Epoch: 9, Batch:10, Loss: 0.001555 (base: 0.001555, pseudo: 0.000000), prec: 1.6%, recall: 77.4%, Time: 36.1 (f1.066+b2.944), maxima: 1.158
+Train Epoch: 9, Batch:20, Loss: 0.001618 (base: 0.001618, pseudo: 0.000000), prec: 1.7%, recall: 81.1%, Time: 69.1 (f0.851+b2.789), maxima: 1.141
+Train Epoch: 9, Batch:30, Loss: 0.001671 (base: 0.001671, pseudo: 0.000000), prec: 1.6%, recall: 80.3%, Time: 102.0 (f0.783+b2.735), maxima: 1.231
+Train Epoch: 9, Batch:40, Loss: 0.001610 (base: 0.001610, pseudo: 0.000000), prec: 1.7%, recall: 81.8%, Time: 135.0 (f0.749+b2.711), maxima: 1.202
+Train Epoch: 9, Batch:50, Loss: 0.001695 (base: 0.001695, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 167.8 (f0.730+b2.696), maxima: 1.277
+Train Epoch: 9, Batch:60, Loss: 0.001685 (base: 0.001685, pseudo: 0.000000), prec: 1.6%, recall: 79.0%, Time: 200.8 (f0.717+b2.687), maxima: 1.085
+Train Epoch: 9, Batch:70, Loss: 0.001697 (base: 0.001697, pseudo: 0.000000), prec: 1.6%, recall: 79.5%, Time: 233.8 (f0.708+b2.681), maxima: 1.119
+Train Epoch: 9, Batch:80, Loss: 0.001653 (base: 0.001653, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 266.9 (f0.701+b2.678), maxima: 1.072
+Train Epoch: 9, Batch:90, Loss: 0.001630 (base: 0.001630, pseudo: 0.000000), prec: 1.6%, recall: 79.8%, Time: 299.9 (f0.696+b2.674), maxima: 1.202
+Train Epoch: 9, Batch:100, Loss: 0.001645 (base: 0.001645, pseudo: 0.000000), prec: 1.6%, recall: 79.2%, Time: 333.0 (f0.692+b2.671), maxima: 0.984
+Train Epoch: 9, Batch:110, Loss: 0.001655 (base: 0.001655, pseudo: 0.000000), prec: 1.6%, recall: 79.8%, Time: 366.0 (f0.689+b2.669), maxima: 1.190
+Train Epoch: 9, Batch:120, Loss: 0.001659 (base: 0.001659, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 399.0 (f0.686+b2.667), maxima: 1.006
+Train Epoch: 9, Batch:130, Loss: 0.001649 (base: 0.001649, pseudo: 0.000000), prec: 1.6%, recall: 79.2%, Time: 431.8 (f0.683+b2.664), maxima: 1.071
+Train Epoch: 9, Batch:140, Loss: 0.001634 (base: 0.001634, pseudo: 0.000000), prec: 1.6%, recall: 79.4%, Time: 464.7 (f0.680+b2.663), maxima: 1.011
+Train Epoch: 9, Batch:150, Loss: 0.001640 (base: 0.001640, pseudo: 0.000000), prec: 1.6%, recall: 79.2%, Time: 497.7 (f0.679+b2.662), maxima: 1.251
+Train Epoch: 9, Batch:160, Loss: 0.001617 (base: 0.001617, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 530.7 (f0.677+b2.661), maxima: 1.161
+Train Epoch: 9, Batch:170, Loss: 0.001625 (base: 0.001625, pseudo: 0.000000), prec: 1.6%, recall: 79.5%, Time: 563.7 (f0.676+b2.660), maxima: 1.235
+Train Epoch: 9, Batch:180, Loss: 0.001612 (base: 0.001612, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 596.9 (f0.675+b2.660), maxima: 1.053
+Train Epoch: 9, Batch:190, Loss: 0.001595 (base: 0.001595, pseudo: 0.000000), prec: 1.6%, recall: 80.0%, Time: 630.0 (f0.674+b2.660), maxima: 1.166
+Train Epoch: 9, Batch:200, Loss: 0.001620 (base: 0.001620, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 663.0 (f0.673+b2.659), maxima: 1.170
+Train Epoch: 9, Batch:210, Loss: 0.001621 (base: 0.001621, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 696.0 (f0.672+b2.658), maxima: 1.083
+Train Epoch: 9, Batch:220, Loss: 0.001646 (base: 0.001646, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 729.1 (f0.671+b2.658), maxima: 1.255
+Train Epoch: 9, Batch:230, Loss: 0.001645 (base: 0.001645, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 762.0 (f0.671+b2.657), maxima: 0.979
+Train Epoch: 9, Batch:240, Loss: 0.001635 (base: 0.001635, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 795.2 (f0.670+b2.657), maxima: 1.251
+Train Epoch: 9, Batch:250, Loss: 0.001631 (base: 0.001631, pseudo: 0.000000), prec: 1.6%, recall: 79.5%, Time: 828.2 (f0.669+b2.657), maxima: 1.249
+Train Epoch: 9, Batch:260, Loss: 0.001644 (base: 0.001644, pseudo: 0.000000), prec: 1.6%, recall: 79.4%, Time: 861.2 (f0.669+b2.656), maxima: 0.997
+Train Epoch: 9, Batch:270, Loss: 0.001632 (base: 0.001632, pseudo: 0.000000), prec: 1.6%, recall: 79.5%, Time: 894.3 (f0.668+b2.656), maxima: 1.083
+Train Epoch: 9, Batch:280, Loss: 0.001625 (base: 0.001625, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 927.5 (f0.668+b2.656), maxima: 1.008
+Train Epoch: 9, Batch:290, Loss: 0.001622 (base: 0.001622, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 960.5 (f0.668+b2.656), maxima: 1.291
+Train Epoch: 9, Batch:300, Loss: 0.001632 (base: 0.001632, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 993.6 (f0.667+b2.656), maxima: 0.860
+Train Epoch: 9, Batch:310, Loss: 0.001627 (base: 0.001627, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 1026.5 (f0.667+b2.655), maxima: 1.378
+Train Epoch: 9, Batch:320, Loss: 0.001627 (base: 0.001627, pseudo: 0.000000), prec: 1.6%, recall: 79.7%, Time: 1059.6 (f0.666+b2.655), maxima: 1.070
+Train Epoch: 9, Batch:330, Loss: 0.001636 (base: 0.001636, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 1092.6 (f0.666+b2.655), maxima: 1.078
+Train Epoch: 9, Batch:340, Loss: 0.001638 (base: 0.001638, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 1125.7 (f0.666+b2.655), maxima: 1.117
+Train Epoch: 9, Batch:350, Loss: 0.001629 (base: 0.001629, pseudo: 0.000000), prec: 1.6%, recall: 79.3%, Time: 1159.0 (f0.665+b2.656), maxima: 1.417
+Train Epoch: 9, Batch:360, Loss: 0.001624 (base: 0.001624, pseudo: 0.000000), prec: 1.6%, recall: 79.6%, Time: 1192.1 (f0.665+b2.656), maxima: 1.174
+Train Epoch: 9, Batch:360, Loss: 0.001624 (base: 0.001624, pseudo: 0.000000), Precision: 1.6%, Recall: 79.6%, Time: 1192.308
+Testing...
+ 90%|█████████ | 9/10 [3:06:38<20:38, 1238.08s/it]moda: 85.1%, modp: 74.5%, precision: 95.6%, recall: 89.2%
+Test, Loss: 0.003320, Precision: 3.8%, Recall: 84.6, 	Time: 44.149
+Training...
+Train Epoch: 10, Batch:10, Loss: 0.001343 (base: 0.001343, pseudo: 0.000000), prec: 1.8%, recall: 84.2%, Time: 36.8 (f1.142+b2.942), maxima: 1.009
+Train Epoch: 10, Batch:20, Loss: 0.001477 (base: 0.001477, pseudo: 0.000000), prec: 1.7%, recall: 80.3%, Time: 69.8 (f0.886+b2.791), maxima: 1.207
+Train Epoch: 10, Batch:30, Loss: 0.001552 (base: 0.001552, pseudo: 0.000000), prec: 1.7%, recall: 81.6%, Time: 102.7 (f0.805+b2.737), maxima: 1.209
+Train Epoch: 10, Batch:40, Loss: 0.001473 (base: 0.001473, pseudo: 0.000000), prec: 1.7%, recall: 82.1%, Time: 135.9 (f0.767+b2.716), maxima: 1.199
+Train Epoch: 10, Batch:50, Loss: 0.001511 (base: 0.001511, pseudo: 0.000000), prec: 1.7%, recall: 81.4%, Time: 169.0 (f0.745+b2.704), maxima: 1.067
+Train Epoch: 10, Batch:60, Loss: 0.001490 (base: 0.001490, pseudo: 0.000000), prec: 1.7%, recall: 82.2%, Time: 202.1 (f0.730+b2.696), maxima: 1.290
+Train Epoch: 10, Batch:70, Loss: 0.001468 (base: 0.001468, pseudo: 0.000000), prec: 1.7%, recall: 82.8%, Time: 235.3 (f0.719+b2.691), maxima: 1.093
+Train Epoch: 10, Batch:80, Loss: 0.001471 (base: 0.001471, pseudo: 0.000000), prec: 1.7%, recall: 83.4%, Time: 268.3 (f0.711+b2.685), maxima: 1.277
+Train Epoch: 10, Batch:90, Loss: 0.001456 (base: 0.001456, pseudo: 0.000000), prec: 1.7%, recall: 83.5%, Time: 301.2 (f0.704+b2.680), maxima: 1.188
+Train Epoch: 10, Batch:100, Loss: 0.001462 (base: 0.001462, pseudo: 0.000000), prec: 1.7%, recall: 83.3%, Time: 334.2 (f0.699+b2.676), maxima: 1.254
+Train Epoch: 10, Batch:110, Loss: 0.001502 (base: 0.001502, pseudo: 0.000000), prec: 1.7%, recall: 82.8%, Time: 367.2 (f0.695+b2.673), maxima: 1.247
+Train Epoch: 10, Batch:120, Loss: 0.001512 (base: 0.001512, pseudo: 0.000000), prec: 1.7%, recall: 83.1%, Time: 400.1 (f0.692+b2.671), maxima: 1.090
+Train Epoch: 10, Batch:130, Loss: 0.001535 (base: 0.001535, pseudo: 0.000000), prec: 1.6%, recall: 82.9%, Time: 433.3 (f0.689+b2.670), maxima: 1.341
+Train Epoch: 10, Batch:140, Loss: 0.001567 (base: 0.001567, pseudo: 0.000000), prec: 1.6%, recall: 82.5%, Time: 466.4 (f0.687+b2.669), maxima: 1.109
+Train Epoch: 10, Batch:150, Loss: 0.001594 (base: 0.001594, pseudo: 0.000000), prec: 1.6%, recall: 81.8%, Time: 499.6 (f0.685+b2.669), maxima: 1.000
+Train Epoch: 10, Batch:160, Loss: 0.001602 (base: 0.001602, pseudo: 0.000000), prec: 1.7%, recall: 81.8%, Time: 532.9 (f0.683+b2.669), maxima: 1.140
+Train Epoch: 10, Batch:170, Loss: 0.001582 (base: 0.001582, pseudo: 0.000000), prec: 1.6%, recall: 82.0%, Time: 566.2 (f0.682+b2.668), maxima: 1.168
+Train Epoch: 10, Batch:180, Loss: 0.001565 (base: 0.001565, pseudo: 0.000000), prec: 1.6%, recall: 82.0%, Time: 599.1 (f0.680+b2.667), maxima: 1.169
+Train Epoch: 10, Batch:190, Loss: 0.001558 (base: 0.001558, pseudo: 0.000000), prec: 1.6%, recall: 82.1%, Time: 632.2 (f0.678+b2.667), maxima: 1.084
+Train Epoch: 10, Batch:200, Loss: 0.001551 (base: 0.001551, pseudo: 0.000000), prec: 1.7%, recall: 82.2%, Time: 665.2 (f0.677+b2.666), maxima: 1.138
+Train Epoch: 10, Batch:210, Loss: 0.001546 (base: 0.001546, pseudo: 0.000000), prec: 1.7%, recall: 82.4%, Time: 698.2 (f0.676+b2.665), maxima: 0.963
+Train Epoch: 10, Batch:220, Loss: 0.001534 (base: 0.001534, pseudo: 0.000000), prec: 1.7%, recall: 82.5%, Time: 731.3 (f0.675+b2.664), maxima: 0.994
+Train Epoch: 10, Batch:230, Loss: 0.001529 (base: 0.001529, pseudo: 0.000000), prec: 1.7%, recall: 82.6%, Time: 764.5 (f0.674+b2.664), maxima: 1.175
+Train Epoch: 10, Batch:240, Loss: 0.001522 (base: 0.001522, pseudo: 0.000000), prec: 1.7%, recall: 83.0%, Time: 797.6 (f0.673+b2.664), maxima: 1.164
+Train Epoch: 10, Batch:250, Loss: 0.001545 (base: 0.001545, pseudo: 0.000000), prec: 1.7%, recall: 82.5%, Time: 830.5 (f0.672+b2.663), maxima: 1.072
+Train Epoch: 10, Batch:260, Loss: 0.001536 (base: 0.001536, pseudo: 0.000000), prec: 1.7%, recall: 82.8%, Time: 863.7 (f0.672+b2.663), maxima: 1.215
+Train Epoch: 10, Batch:270, Loss: 0.001535 (base: 0.001535, pseudo: 0.000000), prec: 1.7%, recall: 82.7%, Time: 896.9 (f0.671+b2.663), maxima: 1.113
+Train Epoch: 10, Batch:280, Loss: 0.001532 (base: 0.001532, pseudo: 0.000000), prec: 1.7%, recall: 82.7%, Time: 930.0 (f0.670+b2.663), maxima: 1.172
+Train Epoch: 10, Batch:290, Loss: 0.001525 (base: 0.001525, pseudo: 0.000000), prec: 1.7%, recall: 83.0%, Time: 963.1 (f0.670+b2.663), maxima: 1.006
+Train Epoch: 10, Batch:300, Loss: 0.001525 (base: 0.001525, pseudo: 0.000000), prec: 1.7%, recall: 82.7%, Time: 996.3 (f0.669+b2.663), maxima: 1.285
+Train Epoch: 10, Batch:310, Loss: 0.001518 (base: 0.001518, pseudo: 0.000000), prec: 1.7%, recall: 82.7%, Time: 1029.5 (f0.669+b2.663), maxima: 1.184
+Train Epoch: 10, Batch:320, Loss: 0.001519 (base: 0.001519, pseudo: 0.000000), prec: 1.6%, recall: 82.7%, Time: 1062.5 (f0.668+b2.663), maxima: 1.146
+Train Epoch: 10, Batch:330, Loss: 0.001516 (base: 0.001516, pseudo: 0.000000), prec: 1.6%, recall: 82.7%, Time: 1095.7 (f0.668+b2.663), maxima: 1.107
+Train Epoch: 10, Batch:340, Loss: 0.001524 (base: 0.001524, pseudo: 0.000000), prec: 1.6%, recall: 82.6%, Time: 1128.9 (f0.667+b2.663), maxima: 1.144
+Train Epoch: 10, Batch:350, Loss: 0.001525 (base: 0.001525, pseudo: 0.000000), prec: 1.6%, recall: 82.6%, Time: 1161.9 (f0.667+b2.662), maxima: 1.184
+Train Epoch: 10, Batch:360, Loss: 0.001531 (base: 0.001531, pseudo: 0.000000), prec: 1.6%, recall: 82.5%, Time: 1194.9 (f0.667+b2.662), maxima: 1.176
+Train Epoch: 10, Batch:360, Loss: 0.001531 (base: 0.001531, pseudo: 0.000000), Precision: 1.6%, Recall: 82.5%, Time: 1195.083
+Testing...
+100%|██████████| 10/10 [3:27:17<00:00, 1238.32s/it]100%|██████████| 10/10 [3:27:17<00:00, 1243.71s/it]
+moda: 85.7%, modp: 74.5%, precision: 95.3%, recall: 90.1%
+Test, Loss: 0.003284, Precision: 3.7%, Recall: 85.5, 	Time: 42.884
+Test loaded model...
+moda: 85.7%, modp: 74.5%, precision: 95.3%, recall: 90.1%
+Test, Loss: 0.003284, Precision: 3.7%, Recall: 85.5, 	Time: 43.330

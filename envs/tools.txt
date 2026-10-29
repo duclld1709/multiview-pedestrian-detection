@@ -1,0 +1,8 @@
+# data_tools/ (sinh nhãn drop + pseudo cache bằng YOLO). torch/torchvision do setup_env.sh cài.
+ultralytics
+numpy<2
+opencv-python-headless
+scipy
+tqdm
+# giữ pkg_resources/distutils shim cho các thư viện cũ
+setuptools==75.8.0
