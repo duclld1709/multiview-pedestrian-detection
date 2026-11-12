@@ -1,6 +1,8 @@
 import os.path as osp
 
 import torch
+from typing import Optional
+from utils.frame_pseudo import FramePseudoLoss, select_supervised, validate_frame_pseudo
 import lightning as pl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,8 +39,10 @@ class WorldTrackModel(pl.LightningModule):
             brl_no_mirror=False,
             use_pseudo_labels=False,
             pseudo_loss_weight=0.01,
-            pseudo_no_neg_reweight=False,
+            pseudo_no_neg_reweight: Optional[bool] = None,
+            pseudo_neg_reweight: Optional[bool] = None,
             pseudo_no_peak_loss=False,
+            pseudo_positive_region: str = 'peak',
     ):
         super().__init__()
         self.model_name = model_name
@@ -62,8 +66,13 @@ class WorldTrackModel(pl.LightningModule):
             raise ValueError(f'heatmap_loss must be brl or focal, got {heatmap_loss}')
         # pseudo labels (BEV only, train split only) are read from data.init_args.pseudo_cache
         self.use_pseudo_labels = use_pseudo_labels
-        pseudo = PseudoLabelLoss(peak_weight=pseudo_loss_weight, neg_reweight=not pseudo_no_neg_reweight,
-                                 peak_loss=not pseudo_no_peak_loss) if use_pseudo_labels else None
+        self.pseudo_neg_reweight = pseudo_neg_reweight
+        self.pseudo_no_neg_reweight = pseudo_no_neg_reweight
+        self.pseudo_no_peak_loss = pseudo_no_peak_loss
+        self.pseudo_positive_region = pseudo_positive_region
+        self.frame_pseudo_loss = FramePseudoLoss('focal_logits', pseudo_loss_weight)
+        pseudo = PseudoLabelLoss(peak_weight=pseudo_loss_weight, neg_reweight=(pseudo_neg_reweight if pseudo_neg_reweight is not None else not pseudo_no_neg_reweight),
+                                 peak_loss=not pseudo_no_peak_loss, positive_region=pseudo_positive_region) if use_pseudo_labels else None
         self.center_loss_fn = HeatmapLoss(base_center_loss, pseudo)
         # val_loss (checkpoint monitor) always uses the plain focal loss, so it is comparable across runs
         self.val_center_loss_fn = HeatmapLoss(FocalLoss())
@@ -90,6 +99,14 @@ class WorldTrackModel(pl.LightningModule):
         self.vox_util = vox.VoxelUtil(self.Y, self.Z, self.X, scene_centroid=self.scene_centroid, bounds=self.bounds)
         self.save_hyperparameters()
 
+    def on_fit_start(self):
+        data = self.trainer.datamodule
+        validate_frame_pseudo(getattr(data, 'drop_mode', 'instance'), getattr(data, 'drop_ratio', 0), self.use_pseudo_labels,
+                             self.pseudo_neg_reweight, self.pseudo_no_neg_reweight,
+                             self.pseudo_no_peak_loss, self.frame_pseudo_loss.weight, self.pseudo_positive_region)
+        if self.use_pseudo_labels != bool(getattr(data, 'pseudo_cache', None)):
+            raise ValueError('model.use_pseudo_labels and data.init_args.pseudo_cache must be set together')
+
     def forward(self, item):
         """
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
@@ -106,6 +123,23 @@ class WorldTrackModel(pl.LightningModule):
             vox_util=self.vox_util,
             ref_T_global=item['ref_T_global'],
         )
+
+    def frame_training_loss(self, target, output):
+        unknown = target['frame_pseudo'].to(output['instance_center'].device).bool()
+        known = ~unknown
+        anchor = sum(value.sum() * 0 for value in output.values() if torch.is_tensor(value))
+        total = anchor
+        losses, stats = {}, {}
+        if known.any():
+            supervised_target, supervised_output = select_supervised(target, output, known)
+            total, losses, stats = self.loss(supervised_target, supervised_output)
+        pseudo_loss = self.frame_pseudo_loss(
+            output['instance_center'][unknown], target['pseudo_center_bev'][unknown])
+        # Weak labels do not fit the learned uncertainty of supervised tasks.
+        pseudo_loss = (10 / (2 * torch.exp(self.model.center_weight))).detach() * pseudo_loss
+        losses['frame_pseudo_loss'] = pseudo_loss
+        total = total + pseudo_loss + anchor
+        return total, losses, stats
 
     def loss(self, target, output, center_loss_fn=None):
         if center_loss_fn is None:
@@ -219,6 +253,8 @@ class WorldTrackModel(pl.LightningModule):
             # monitoring only (added after the total)
             stats_dict['pseudo_ratio'] = (pseudo_center_loss / center_loss.abs().clamp(min=1e-8)).detach()
             stats_dict['pseudo_peak_cells'] = (pseudo_target.eq(1) & center_g.lt(1)).sum().float() / B
+            positive_mask, _, _ = center_loss_fn.pseudo.masks(center_g, pseudo_target, pseudo_weight)
+            stats_dict['pseudo_positive_cells'] = positive_mask.sum().float() / B
 
         return total_loss, loss_dict, stats_dict
 
@@ -229,7 +265,10 @@ class WorldTrackModel(pl.LightningModule):
             raise ValueError('model.use_pseudo_labels and data.init_args.pseudo_cache must be set together')
         output = self(item)
 
-        total_loss, loss_dict, stats_dict = self.loss(target, output)
+        if 'frame_pseudo' in target:
+            total_loss, loss_dict, stats_dict = self.frame_training_loss(target, output)
+        else:
+            total_loss, loss_dict, stats_dict = self.loss(target, output)
 
         B = item['img'].shape[0]
         self.log('train_loss', total_loss, prog_bar=True, batch_size=B)
@@ -410,6 +449,15 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
 
     class MyLightningCLI(LightningCLI):
+        def before_instantiate_classes(self):
+            if self.subcommand != 'fit':
+                return
+            config = self.config[self.subcommand]
+            data, model = config.data.init_args, config.model
+            validate_frame_pseudo(getattr(data, 'drop_mode', 'instance'), getattr(data, 'drop_ratio', 0), model.use_pseudo_labels,
+                                 model.pseudo_neg_reweight, model.pseudo_no_neg_reweight,
+                                 model.pseudo_no_peak_loss, model.pseudo_loss_weight, model.pseudo_positive_region)
+
         def add_arguments_to_parser(self, parser):
             parser.link_arguments("model.resolution", "data.init_args.resolution")
             parser.link_arguments("model.bounds", "data.init_args.bounds")

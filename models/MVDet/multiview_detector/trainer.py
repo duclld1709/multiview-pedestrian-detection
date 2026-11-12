@@ -27,8 +27,18 @@ class PerspectiveTrainer(BaseTrainer):
         self.denormalize = denormalize
         self.alpha = alpha
 
-    def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None):
+    def _loss(self, map_res, map_gt, imgs_res, imgs_gt, dataset, pseudo_target=None, pseudo_weight=None, frame_pseudo=None):
         """Returns (base_loss, pseudo_loss); criterion is a HeatmapLoss, pseudo only on the BEV map."""
+        if frame_pseudo is not None:
+            unknown = frame_pseudo.to(map_res.device).bool()
+            known = ~unknown
+            base = map_res.sum() * 0 + sum(x.sum() * 0 for x in imgs_res)
+            if known.any():
+                base, _ = self._loss(map_res[known], map_gt[known.to(map_gt.device)],
+                                     [x[known.to(x.device)] for x in imgs_res],
+                                     [x[known.to(x.device)] for x in imgs_gt], dataset)
+            pseudo = self.criterion.frame_pseudo_loss(map_res[unknown], pseudo_target[unknown.to(pseudo_target.device)])
+            return base, pseudo
         loss = 0
         for img_res, img_gt in zip(imgs_res, imgs_gt):
             loss += self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)['base']
@@ -55,21 +65,28 @@ class PerspectiveTrainer(BaseTrainer):
             t_f = time.time()
             t_forward += t_f - t_b
             base_loss, pseudo_loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset,
-                                                pseudo_target, pseudo_weight)
+                                                pseudo_target, pseudo_weight,
+                                                batch[6] if len(batch) > 6 else None)
             loss = base_loss + pseudo_loss
             loss.backward()
             optimizer.step()
             losses += loss.item()
             base_losses += base_loss.item()
             pseudo_losses += pseudo_loss.item()
-            pred = (map_res > self.cls_thres).int().to(map_gt.device)
-            true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
-            false_positive = pred.sum().item() - true_positive
-            false_negative = map_gt.sum().item() - true_positive
-            precision = true_positive / (true_positive + false_positive + 1e-4)
-            recall = true_positive / (true_positive + false_negative + 1e-4)
-            precision_s.update(precision)
-            recall_s.update(recall)
+            metric_res, metric_gt = map_res, map_gt
+            if len(batch) > 6:
+                labeled = ~batch[6].bool()
+                metric_res = map_res[labeled.to(map_res.device)]
+                metric_gt = map_gt[labeled.to(map_gt.device)]
+            if len(metric_gt):
+                pred = (metric_res > self.cls_thres).int().to(metric_gt.device)
+                true_positive = (pred.eq(metric_gt) * pred.eq(1)).sum().item()
+                false_positive = pred.sum().item() - true_positive
+                false_negative = metric_gt.sum().item() - true_positive
+                precision = true_positive / (true_positive + false_positive + 1e-4)
+                recall = true_positive / (true_positive + false_negative + 1e-4)
+                precision_s.update(precision)
+                recall_s.update(recall)
 
             t_b = time.time()
             t_backward += t_b - t_f

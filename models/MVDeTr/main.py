@@ -2,6 +2,7 @@ import os
 
 os.environ['OMP_NUM_THREADS'] = '1'
 import argparse
+from multiview_detector.loss.frame_pseudo import FramePseudoLoss, validate_frame_pseudo
 import sys
 import shutil
 from distutils.dir_util import copy_tree
@@ -23,6 +24,10 @@ from multiview_detector.loss import FocalLoss, BRLFocalLoss, PseudoLabelLoss, He
 
 
 def build_focal_loss(args):
+    frame_pseudo = validate_frame_pseudo(
+        args.drop_mode, args.drop_ratio, args.use_pseudo_labels,
+        args.pseudo_neg_reweight, args.pseudo_no_neg_reweight,
+        args.pseudo_no_peak_loss, args.pseudo_loss_weight, args.pseudo_positive_region)
     if args.loss == 'brl':
         base = BRLFocalLoss(
             pos_thr=args.brl_pos_thr,
@@ -33,16 +38,22 @@ def build_focal_loss(args):
     else:
         base = FocalLoss()
     pseudo = None
-    if args.use_pseudo_labels:
+    if args.use_pseudo_labels and not frame_pseudo:
         pseudo = PseudoLabelLoss(
             peak_weight=args.pseudo_loss_weight,
-            neg_reweight=not args.pseudo_no_neg_reweight,
+            neg_reweight=(args.pseudo_neg_reweight if args.pseudo_neg_reweight is not None else not args.pseudo_no_neg_reweight),
             peak_loss=not args.pseudo_no_peak_loss,
+            positive_region=args.pseudo_positive_region,
         )
-    return HeatmapLoss(base, pseudo)
+    criterion = HeatmapLoss(base, pseudo)
+    criterion.frame_pseudo_loss = FramePseudoLoss('focal_logits', args.pseudo_loss_weight) if frame_pseudo else None
+    return criterion
 
 
 def main(args):
+    validate_frame_pseudo(args.drop_mode, args.drop_ratio, args.use_pseudo_labels,
+                         args.pseudo_neg_reweight, args.pseudo_no_neg_reweight,
+                         args.pseudo_no_peak_loss, args.pseudo_loss_weight, args.pseudo_positive_region)
     if args.use_mse and args.loss == 'brl':
         raise ValueError('--use_mse 1 replaces the focal heatmap loss, so BRL would be ignored; use --loss focal')
     if args.use_mse and args.use_pseudo_labels:
@@ -124,6 +135,8 @@ def main(args):
             loss_tag += '_noneg'
         if args.pseudo_no_peak_loss:
             loss_tag += '_nopeak'
+        if args.pseudo_positive_region == 'gaussian':
+            loss_tag += '_posgaussian'
     log_root = f'logs/{args.dataset}/{drop_tag}/{loss_tag}'
     if args.resume is None:
         logdir = f'{log_root}/{"debug_" if is_debug else ""}{"SS_" if args.semi_supervised else ""}' \
@@ -260,17 +273,22 @@ if __name__ == '__main__':
     parser.add_argument('--pseudo_cache', type=str, default=None,
                         help='JSON detection cache (same format for every model)')
     parser.add_argument('--pseudo_loss_weight', type=float, default=0.01,
-                        help='weight of the pseudo-peak term (lambda); does not scale neg reweighting')
+                        help='pseudo-peak weight for instance-drop; whole pseudo BEV loss weight for frame-drop')
     parser.add_argument('--pseudo_conf_threshold', type=float, default=0.5,
                         help='min detector score for a pseudo label')
     parser.add_argument('--pseudo_sigma_m', type=float, default=0.5,
                         help='std of the pseudo BEV Gaussian in metres (2x the 0.25 m GT kernel)')
     parser.add_argument('--pseudo_suppress_radius_m', type=float, default=1.0,
                         help='drop pseudo labels within this radius of a kept GT')
-    parser.add_argument('--pseudo_no_neg_reweight', action='store_true',
+    parser.add_argument('--pseudo_no_neg_reweight', action='store_true', default=None,
                         help='ablation: do not scale the GT negative term by (1 - pseudo_weight)')
+    parser.add_argument('--pseudo_positive_region', choices=['peak', 'gaussian'], default='peak',
+                        help='instance mode: positive pseudo loss on peaks or all Gaussian support')
     parser.add_argument('--pseudo_no_peak_loss', action='store_true',
                         help='ablation: no pseudo-peak term (peaks stay in the GT negative term)')
+
+    parser.add_argument('--pseudo_neg_reweight', action='store_true', default=None,
+                        help='explicitly enable negative reweighting; incompatible with frame-drop + pseudo')
 
     args = parser.parse_args()
 

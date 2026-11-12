@@ -35,6 +35,48 @@ class PerspectiveTrainer(BaseTrainer):
         self.use_mse = use_mse
         self.id_ratio = id_ratio
 
+    def _training_loss(self, world_heatmap, world_offset, imgs_heatmap, imgs_offset, imgs_wh,
+                       world_gt, imgs_gt, cameras):
+        unknown = world_gt.get('frame_pseudo')
+        if unknown is not None:
+            unknown = unknown.to(world_heatmap.device).bool()
+            known = ~unknown
+            pseudo = self.focal_loss.frame_pseudo_loss(
+                world_heatmap[unknown], world_gt['pseudo_heatmap'][unknown.to(world_gt['pseudo_heatmap'].device)])
+            base = sum(x.sum() * 0 for x in (world_heatmap, world_offset, imgs_heatmap, imgs_offset, imgs_wh))
+            if known.any():
+                camera_mask = known.repeat_interleave(cameras)
+                supervised_world = {key: value[known.to(value.device)] for key, value in world_gt.items()
+                                    if key not in ('frame_pseudo', 'pseudo_heatmap', 'pseudo_weight')}
+                supervised_images = {key: value[camera_mask.to(value.device)] for key, value in imgs_gt.items()}
+                base, _ = self._training_loss(
+                    world_heatmap[known], world_offset[known], imgs_heatmap[camera_mask],
+                    imgs_offset[camera_mask], imgs_wh[camera_mask], supervised_world, supervised_images, cameras)
+            return base, pseudo
+        N = cameras
+        world_hm_loss = self.focal_loss(world_heatmap, world_gt['heatmap'],
+                                        pseudo_target=world_gt.get('pseudo_heatmap'),
+                                        pseudo_weight=world_gt.get('pseudo_weight'))
+        loss_w_hm = world_hm_loss['base']
+        loss_w_off = self.regress_loss(world_offset, world_gt['reg_mask'], world_gt['idx'], world_gt['offset'])
+        # loss_w_id = self.ce_loss(world_id, world_gt['reg_mask'], world_gt['idx'], world_gt['pid'])
+        loss_img_hm = self.focal_loss(imgs_heatmap, imgs_gt['heatmap'])['base']
+        loss_img_off = self.regress_loss(imgs_offset, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['offset'])
+        loss_img_wh = self.regress_loss(imgs_wh, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['wh'])
+        # loss_img_id = self.ce_loss(imgs_id, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['pid'])
+        # multiview regularization
+
+        w_loss = loss_w_hm + loss_w_off  # + self.id_ratio * loss_w_id
+        img_loss = loss_img_hm + loss_img_off + loss_img_wh * 0.1  # + self.id_ratio * loss_img_id
+        loss = w_loss + img_loss / N * self.alpha
+        if self.use_mse:
+            loss = self.mse_loss(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
+                   self.alpha * self.mse_loss(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
+        base_loss = loss
+        # world focal loss has unit weight, so pseudo / base on the BEV heatmap is set by the peak weight
+        pseudo_loss = world_hm_loss['pseudo']
+        return base_loss, pseudo_loss
+
     def train(self, epoch, dataloader, optimizer, scaler, scheduler=None, log_interval=100):
         self.model.train()
         losses = 0
@@ -52,27 +94,8 @@ class PerspectiveTrainer(BaseTrainer):
             # with autocast():
             # supervised
             (world_heatmap, world_offset), (imgs_heatmap, imgs_offset, imgs_wh) = self.model(data, affine_mats)
-            world_hm_loss = self.focal_loss(world_heatmap, world_gt['heatmap'],
-                                            pseudo_target=world_gt.get('pseudo_heatmap'),
-                                            pseudo_weight=world_gt.get('pseudo_weight'))
-            loss_w_hm = world_hm_loss['base']
-            loss_w_off = self.regress_loss(world_offset, world_gt['reg_mask'], world_gt['idx'], world_gt['offset'])
-            # loss_w_id = self.ce_loss(world_id, world_gt['reg_mask'], world_gt['idx'], world_gt['pid'])
-            loss_img_hm = self.focal_loss(imgs_heatmap, imgs_gt['heatmap'])['base']
-            loss_img_off = self.regress_loss(imgs_offset, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['offset'])
-            loss_img_wh = self.regress_loss(imgs_wh, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['wh'])
-            # loss_img_id = self.ce_loss(imgs_id, imgs_gt['reg_mask'], imgs_gt['idx'], imgs_gt['pid'])
-            # multiview regularization
-
-            w_loss = loss_w_hm + loss_w_off  # + self.id_ratio * loss_w_id
-            img_loss = loss_img_hm + loss_img_off + loss_img_wh * 0.1  # + self.id_ratio * loss_img_id
-            loss = w_loss + img_loss / N * self.alpha
-            if self.use_mse:
-                loss = self.mse_loss(world_heatmap, world_gt['heatmap'].to(world_heatmap.device)) + \
-                       self.alpha * self.mse_loss(imgs_heatmap, imgs_gt['heatmap'].to(imgs_heatmap.device))
-            base_loss = loss
-            # world focal loss has unit weight, so pseudo / base on the BEV heatmap is set by the peak weight
-            pseudo_loss = world_hm_loss['pseudo']
+            base_loss, pseudo_loss = self._training_loss(
+                world_heatmap, world_offset, imgs_heatmap, imgs_offset, imgs_wh, world_gt, imgs_gt, N)
             loss = base_loss + pseudo_loss
 
             t_f = time.time()

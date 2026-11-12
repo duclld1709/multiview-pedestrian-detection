@@ -1,4 +1,5 @@
 import os
+from utils.frame_pseudo import annotation_files, load_annotation
 import json
 from operator import itemgetter
 
@@ -44,6 +45,8 @@ class PedestrianDataset(VisionDataset):
         self.img_downsample = 4
 
         # train labels can come from drop_annotations/drop_XX; val/test and prepare_gt() always use full labels
+        self.unlabeled_frames = set()
+        self.frame_pseudo = bool(self.is_train and drop_mode == 'frame' and drop_ratio > 0 and pseudo_cache)
         if drop_ratio > 0 and self.is_train:
             drop_prefix = 'frame_drop' if drop_mode == 'frame' else 'drop'
             self.anno_dir = os.path.join(self.root, 'drop_annotations', f'{drop_prefix}_{int(drop_ratio)}',
@@ -128,14 +131,15 @@ class PedestrianDataset(VisionDataset):
 
     def download(self, frame_range):
         num_frame, num_world_bbox, num_imgs_bbox = 0, 0, 0
-        for fname in sorted(os.listdir(self.anno_dir)):
+        for fname in annotation_files(self.root, self.anno_dir, self.frame_pseudo):
             if not fname.endswith('.json'):
                 continue
             frame = int(fname.split('.')[0])
             if frame in frame_range:
                 num_frame += 1
-                with open(os.path.join(self.anno_dir, fname)) as json_file:
-                    all_pedestrians = json.load(json_file)
+                if self.frame_pseudo and not os.path.isfile(os.path.join(self.anno_dir, fname)):
+                    self.unlabeled_frames.add(frame)
+                all_pedestrians = load_annotation(self.anno_dir, fname)
                 world_pts, world_pids = [], []
                 img_bboxs, img_pids = [[] for _ in range(self.num_cam)], [[] for _ in range(self.num_cam)]
 
@@ -299,7 +303,7 @@ class PedestrianDataset(VisionDataset):
     def __getitem__(self, index):
         frame = list(self.world_gt.keys())[index]
         pre_frame = list(self.world_gt.keys())[max(index - 1, 0)]
-        if pre_frame != frame - self.base.frame_step:
+        if pre_frame != frame - self.base.frame_step or pre_frame in self.unlabeled_frames:
             # previous frame missing (frame-drop setting): treat like the first frame
             pre_frame = frame
         cameras = list(range(self.num_cam))
@@ -367,6 +371,8 @@ class PedestrianDataset(VisionDataset):
             target['pseudo_center_bev'] = pseudo_center_bev  # 1,Y,X
             target['pseudo_weight_bev'] = pseudo_weight_bev  # 1,Y,X
 
+        if self.frame_pseudo:
+            target['frame_pseudo'] = frame in self.unlabeled_frames
         return item, target
 
     def get_pseudo_bev_target(self, frame, worldgrid_T_worldcoord, mem_gt_pts):

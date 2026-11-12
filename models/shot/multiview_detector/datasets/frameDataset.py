@@ -1,4 +1,5 @@
 import os
+from multiview_detector.loss.frame_pseudo import annotation_files, load_annotation
 import json
 from scipy.stats import multivariate_normal
 from PIL import Image
@@ -40,6 +41,8 @@ class frameDataset(VisionDataset):
             if not isinstance(self.pseudo_cache, dict):
                 raise ValueError("Pseudo cache must contain a 'detections' object keyed by frame and camera")
 
+        self.unlabeled_frames = set()
+        self.frame_pseudo = bool(train and drop_mode == 'frame' and drop_ratio > 0 and pseudo_cache)
         if drop_ratio > 0:
             drop_tag = int(drop_ratio)  # 20.0 -> drop_20 (not drop_20.0)
             # instance: drop_XX (people dropped per frame); frame: frame_drop_XX (dropped frames have no JSON)
@@ -109,13 +112,14 @@ class frameDataset(VisionDataset):
         np.savetxt(self.gt_fpath, og_gt, '%d')
 
     def download(self, frame_range):
-        for fname in sorted(os.listdir(self.anno_dir)):
+        for fname in annotation_files(self.root, self.anno_dir, self.frame_pseudo):
             if not fname.endswith('.json'):
                 continue
             frame = int(fname.split('.')[0])
             if frame in frame_range:
-                with open(os.path.join(self.anno_dir, fname)) as json_file:
-                    all_pedestrians = json.load(json_file)
+                if self.frame_pseudo and not os.path.isfile(os.path.join(self.anno_dir, fname)):
+                    self.unlabeled_frames.add(frame)
+                all_pedestrians = load_annotation(self.anno_dir, fname)
                 i_s, j_s, v_s = [], [], []
                 head_row_cam_s, head_col_cam_s = [[] for _ in range(self.num_cam)], \
                                                  [[] for _ in range(self.num_cam)]
@@ -180,7 +184,10 @@ class frameDataset(VisionDataset):
         if self.pseudo_cache is None:
             return imgs, map_gt.float(), imgs_gt, frame
         pseudo_target, pseudo_weight = self._build_pseudo_targets(frame, map_gt)
-        return imgs, map_gt.float(), imgs_gt, frame, pseudo_target, pseudo_weight
+        result = (imgs, map_gt.float(), imgs_gt, frame, pseudo_target, pseudo_weight)
+        if self.frame_pseudo:
+            return result + (frame in self.unlabeled_frames,)
+        return result
 
     def _build_pseudo_targets(self, frame, map_gt):
         """Project cached person foot points to the BEV grid and rasterize soft evidence.

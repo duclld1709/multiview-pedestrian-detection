@@ -1,4 +1,5 @@
 import os
+from multiview_detector.loss.frame_pseudo import annotation_files, load_annotation
 import json
 import time
 from operator import itemgetter
@@ -89,6 +90,8 @@ class frameDataset(VisionDataset):
 
         # training labels can come from drop_annotations/drop_XX (instance) or frame_drop_XX (frame);
         # prepare_gt() always uses full annotations
+        self.unlabeled_frames = set()
+        self.frame_pseudo = bool(train and drop_mode == 'frame' and drop_ratio > 0 and pseudo_cache)
         if drop_ratio > 0:
             drop_prefix = 'frame_drop' if drop_mode == 'frame' else 'drop'
             self.anno_dir = os.path.join(self.root, 'drop_annotations', f'{drop_prefix}_{int(drop_ratio)}',
@@ -115,15 +118,16 @@ class frameDataset(VisionDataset):
         self.keeps = {}
         num_frame, num_world_bbox, num_imgs_bbox = 0, 0, 0
         num_keep, num_all = 0, 0
-        for fname in sorted(os.listdir(self.anno_dir)):
+        for fname in annotation_files(self.root, self.anno_dir, self.frame_pseudo):
             if not fname.endswith('.json'):
                 continue
             frame = int(fname.split('.')[0])
             if frame in frame_range:
                 num_frame += 1
                 keep = np.mean(np.array(frame_range) < frame) < self.semi_supervised if self.semi_supervised else 1
-                with open(os.path.join(self.anno_dir, fname)) as json_file:
-                    all_pedestrians = json.load(json_file)
+                if self.frame_pseudo and not os.path.isfile(os.path.join(self.anno_dir, fname)):
+                    self.unlabeled_frames.add(frame)
+                all_pedestrians = load_annotation(self.anno_dir, fname)
                 world_pts, world_pids = [], []
                 img_bboxs, img_pids = [[] for _ in range(self.num_cam)], [[] for _ in range(self.num_cam)]
                 if keep:
@@ -268,6 +272,8 @@ class frameDataset(VisionDataset):
                           reduce=self.world_reduce, top_k=self.top_k, kernel_size=self.world_kernel_size)
         if self.pseudo_cache is not None:
             world_gt['pseudo_heatmap'], world_gt['pseudo_weight'] = self.get_pseudo_world_gt(frame, world_pt_s)
+        if self.frame_pseudo:
+            world_gt['frame_pseudo'] = frame in self.unlabeled_frames
         return imgs, world_gt, imgs_gt, affine_mats, frame
 
     def get_pseudo_world_gt(self, frame, world_pt_s):

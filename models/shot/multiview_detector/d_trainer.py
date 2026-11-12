@@ -47,7 +47,8 @@ class DPerspectiveTrainer(BaseTrainer):
             map_gt = map_gt.cuda()
             alpha = len(imgs_gt) * self.alpha
             base_loss, pseudo_loss, map_res = self.model(data, imgs_gt, map_gt, alpha,
-                                                         pseudo_target=pseudo_target, pseudo_weight=pseudo_weight)
+                                                         pseudo_target=pseudo_target, pseudo_weight=pseudo_weight,
+                                                         frame_pseudo=batch[6] if len(batch) > 6 else None)
             loss = base_loss + pseudo_loss
             t_f = time.time()
             t_forward += t_f - t_b
@@ -57,14 +58,20 @@ class DPerspectiveTrainer(BaseTrainer):
             base_losses += base_loss.item()
             pseudo_losses += pseudo_loss.item()
 
-            pred = (map_res > self.cls_thres).int().to(map_gt.device)
-            true_positive = (pred.eq(map_gt) * pred.eq(1)).sum().item()
-            false_positive = pred.sum().item() - true_positive
-            false_negative = map_gt.sum().item() - true_positive
-            precision = true_positive / (true_positive + false_positive + 1e-4)
-            recall = true_positive / (true_positive + false_negative + 1e-4)
-            precision_s.update(precision)
-            recall_s.update(recall)
+            metric_res, metric_gt = map_res, map_gt
+            if len(batch) > 6:
+                labeled = ~batch[6].bool()
+                metric_res = map_res[labeled.to(map_res.device)]
+                metric_gt = map_gt[labeled.to(map_gt.device)]
+            if len(metric_gt):
+                pred = (metric_res > self.cls_thres).int().to(metric_gt.device)
+                true_positive = (pred.eq(metric_gt) * pred.eq(1)).sum().item()
+                false_positive = pred.sum().item() - true_positive
+                false_negative = metric_gt.sum().item() - true_positive
+                precision = true_positive / (true_positive + false_positive + 1e-4)
+                recall = true_positive / (true_positive + false_negative + 1e-4)
+                precision_s.update(precision)
+                recall_s.update(recall)
 
             t_b = time.time()
             t_backward += t_b - t_f

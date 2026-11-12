@@ -117,8 +117,22 @@ class DPerspTransDetector(nn.Module):
             warped_feat += self.feat_before_merge[f'{i}'](out_feat) # [b*n,c,h,w]
         return warped_feat
 
+    def _frame_training_loss(self, map_result, imgs_result, map_gt, imgs_gt,
+                             pseudo_target, frame_pseudo, cameras, alpha):
+        unknown = frame_pseudo.to(map_result.device).bool()
+        known = ~unknown
+        base_loss = map_result.sum() * 0 + imgs_result.sum() * 0
+        if known.any():
+            camera_mask = known.repeat_interleave(cameras)
+            base_loss = self.criterion(map_result[known], map_gt[known], self.map_kernel)['base']
+            base_loss = base_loss + alpha * self.criterion(
+                imgs_result[camera_mask], imgs_gt[camera_mask], self.img_kernel)['base']
+        pseudo_loss = self.criterion.frame_pseudo_loss(
+            map_result[unknown], pseudo_target[unknown.to(pseudo_target.device)])
+        return base_loss, pseudo_loss, map_result
+
     def forward(self, imgs, imgs_gt=None, map_gt=None, alpha=0, visualize=False, pseudo_target=None,
-                pseudo_weight=None):
+                pseudo_weight=None, frame_pseudo=None):
         # implemented assuming B=1
         B, N, C, H, W = imgs.shape
         img_feature_all = self.base_pt1(imgs.view([-1,C,H,W]).to('cuda:0'))
@@ -131,6 +145,9 @@ class DPerspTransDetector(nn.Module):
         map_result = F.interpolate(map_result, self.reducedgrid_shape, mode='bilinear')
         if not self.training:
             return map_result, [i[None] for i in imgs_result]
+        if frame_pseudo is not None:
+            return self._frame_training_loss(map_result, imgs_result, map_gt, imgs_gt,
+                                             pseudo_target, frame_pseudo, N, alpha)
         # training returns (base_loss, pseudo_loss, map_result)
         if self.criterion is not None:
             # HeatmapLoss: target = max-pool + Gaussian (MVDet convention); pseudo labels only on the BEV map
