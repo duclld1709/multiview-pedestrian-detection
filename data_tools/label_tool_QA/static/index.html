@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV Label</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">MV Label</div>
+  <div id="projectInfo" class="project-info">Chưa mở project</div>
+  <div id="jobBar" class="job hidden"><div class="job-fill"></div><span class="job-text"></span></div>
+  <div class="top-actions">
+    <button id="btnSiteMap" class="map-entry hidden" type="button" title="Mở bản đồ WaveTrack lớn và công cụ vẽ cột, vách">✎ Vẽ hiện trường</button>
+    <button id="btnImportLabels">Nhập nhãn label_tool</button>
+    <button id="btnSetup">⚙ Setup</button>
+    <button id="btnCrops" type="button" aria-pressed="false" title="Crop người đang chọn từ từng camera (J)">Crops <kbd>J</kbd></button>
+    <button id="btnMetrics" disabled>So với GT</button>
+    <button id="btnExport" class="primary" disabled>Export</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="frames">
+    <div class="pane-title">Frames <span id="framesProgress"></span></div>
+    <ul id="frameList"></ul>
+  </aside>
+
+  <aside id="cropPanel" class="crop-panel hidden" aria-label="Crop người đang chọn">
+    <div class="pane-title">Crops <button id="btnCloseCrops" type="button" aria-label="Đóng crop">×</button></div>
+    <div id="cropPerson" class="muted">Chọn người trên BEV</div>
+    <div id="cropList" class="crop-list"></div>
+    <div id="cropResize" class="crop-resize" role="separator" aria-label="Đổi độ rộng crop" aria-orientation="vertical" tabindex="0"></div>
+  </aside>
+  <section class="center">
+    <div class="frame-bar">
+      <button id="btnPrev" title="Frame trước ( , )">◀</button>
+      <div id="frameTitle" class="frame-title">—</div>
+      <button id="btnNext" title="Frame sau ( . )">▶</button>
+      <div class="spacer"></div>
+      <label class="toggle"><input type="checkbox" id="showYolo" checked> YOLO <kbd>B</kbd></label>
+      <label class="toggle"><input type="checkbox" id="showProj" checked> Box chiếu</label>
+      <label class="toggle"><input type="checkbox" id="showGt"> GT <kbd>G</kbd></label>
+      <label class="toggle" title="Lưới mặt sàn 1 m chiếu lên ảnh; vùng tô xanh là phạm vi BEV được label"><input type="checkbox" id="showGrid"> Lưới sàn <kbd>L</kbd></label>
+      <label class="toggle"><input type="checkbox" id="followZoom"> Zoom người <kbd>Z</kbd></label>
+      <label class="toggle" title="Bật: kéo ✥ / resize / phím mũi tên chỉ đổi box của camera đang chỉnh. Tắt: dời người thì box mọi camera đi theo."><input type="checkbox" id="perView"> Chỉnh riêng camera <kbd>R</kbd></label>
+      <select id="boxMode" title="Box ghi vào label">
+        <option value="projected">Label: box chiếu</option>
+        <option value="yolo">Label: box YOLO khi khớp</option>
+      </select>
+      <button id="btnRelabel" title="Chạy lại model + YOLO cho frame này">↻ Auto</button>
+      <button id="btnReviewed" class="primary" title="Đánh dấu đã review và sang frame sau (F)">✓ Xong frame <kbd>F</kbd></button>
+    </div>
+    <div id="views" class="views"></div>
+    <div class="bev-strip" id="bevStrip">
+      <div class="bev-title"><span id="bevHeading">Bird's-eye view</span>
+        <span id="bevGridHint" class="muted" title="bấm chọn · kéo để dời · double-click thêm người">ô lưới 1 m</span>
+        <div id="mapControls" class="map-controls hidden">
+          <label class="bev-sight-toggle" title="Hiện góc nhìn xuất phát từ camera và phần bị vật cản che">
+            <input id="mapSightToggle" type="checkbox"> Tầm nhìn camera
+          </label>
+          <div class="bev-flip-controls" role="group" aria-label="Lật hiển thị BEV map">
+            <span>BEV</span>
+            <button type="button" id="btnBevFlipHorizontal" title="Lật trái ↔ phải trên BEV map" aria-label="Lật ngang BEV map" aria-pressed="false">⇄</button>
+            <button type="button" id="btnBevFlipVertical" title="Lật trên ↔ dưới trên BEV map" aria-label="Lật dọc BEV map" aria-pressed="false">⇅</button>
+            <button type="button" id="btnBevFlipReset" title="Trở về hướng tọa độ BEV gốc" aria-label="Bỏ lật BEV map">0</button>
+          </div>
+          <label class="bev-view-picker" title="Chọn camera để xem tầm nhìn trên sơ đồ">
+            Camera <select id="mapCoverageCamera" aria-label="Camera để mô phỏng vùng nhìn trên BEV"><option value="all">Tất cả</option></select>
+          </label>
+          <label class="bev-view-picker" title="Góc mở là hình chiếu ngang từ tâm camera; Sàn là phần mặt sàn thực sự nằm trong ảnh">
+            Sight <select id="mapSightMode" aria-label="Kiểu tầm nhìn camera">
+              <option value="fan">Góc mở camera</option>
+              <option value="floor">Sàn thực sự thấy</option>
+            </select>
+          </label>
+          <div class="bev-zoom-controls" role="group" aria-label="Phóng to sơ đồ BEV">
+            <button type="button" id="btnMapZoomOut" title="Thu nhỏ sơ đồ" aria-label="Thu nhỏ sơ đồ">−</button>
+            <button type="button" id="btnMapZoomReset" title="Về tỷ lệ vừa khung và đặt lại vị trí" aria-label="Đặt lại zoom sơ đồ">100%</button>
+            <button type="button" id="btnMapZoomIn" title="Phóng to sơ đồ" aria-label="Phóng to sơ đồ">+</button>
+          </div>
+          <button type="button" id="btnMapExpand">Mở bản đồ lớn</button>
+          <button type="button" id="btnMapEdit">Vẽ hiện trường</button>
+        </div>
+        <div class="legend">
+          <span><i class="sw dot" style="--c:#3ecf8e"></i>ổn (≥2 view YOLO xác nhận)</span>
+          <span><i class="sw dot" style="--c:#ff7a3d"></i>cần kiểm tra</span>
+          <span><i class="sw dot dashed" style="--c:#b98cff"></i>đề xuất (chỉ ghi khi Enter)</span>
+          <span><i class="sw dot" style="--c:#4aa8ff"></i>thêm tay</span>
+          <span><i class="sw dot" style="--c:#ffd60a"></i>đã chỉnh</span>
+          <span><i class="sw ring" style="--c:#ff2bd6"></i>đang chọn</span>
+          <span><i class="sw box dashed" style="--c:#ff6b6b"></i>YOLO chưa khớp</span>
+          <span><i class="sw box" style="--c:rgba(255,255,255,.55)"></i>YOLO đã khớp</span>
+          <span id="legendGt"><i class="sw box dashed" style="--c:#22d3ee"></i>GT (nét nối: lệch so với label)</span>
+          <span id="legendGtDiff"><i class="sw box" style="--c:#ff3b3b"></i>GT bị thiếu · <i class="sw ring" style="--c:#ff3b3b"></i>label thừa</span>
+          <span id="legendGrid" class="hidden"><i class="sw area"></i>vùng label (lưới 1 m, đậm mỗi 5 m)</span>
+          <span><i class="sw solid"></i>chấm đặc = đã duyệt</span>
+        </div>
+      </div>
+      <div class="bev-workspace">
+        <div class="bev-wrap" id="bevWrap"><canvas id="bev"></canvas></div>
+        <aside id="siteMapEditor" class="site-map-editor hidden" aria-label="Vẽ hiện trường">
+          <div class="map-editor-head"><strong>Vẽ hiện trường</strong><span id="mapSaveStatus">Đã lưu</span></div>
+          <p id="mapStructureStatus" class="muted small"></p>
+          <p class="muted small">Chọn vách/cột rồi kéo P1, P2 hoặc tâm ngay trên ảnh camera; BEV và các camera khác cập nhật theo calibration. Cuộn chuột để zoom BEV; giữ chuột phải, chuột giữa hoặc Shift + chuột trái để kéo sơ đồ. Tọa độ tính bằng mét trên mặt sàn.</p>
+          <label class="map-inline"><input id="mapFlipHorizontal" type="checkbox"> Lật ngang sơ đồ (trái ↔ phải)</label>
+          <label class="map-inline"><input id="mapFlipVertical" type="checkbox"> Lật dọc sơ đồ (trên ↔ dưới)</label>
+          <label class="map-inline"><input id="mapShowCoverage" type="checkbox"> Hiện tầm nhìn camera trên sơ đồ</label>
+          <p class="muted small">Góc mở camera: quạt tia từ tâm camera, theo góc ngang tại tâm ảnh; nét đứt là trục nhìn. Vật cản cao tới camera chặn tia, phía sau tô xám. Chọn “Sàn thực sự thấy” để kiểm tra phần sàn nằm trong khung ảnh theo cả độ cao và độ nghiêng camera.</p>
+          <label>Công cụ
+            <select id="mapTool">
+              <option value="select">Chọn và sửa vật thể</option>
+              <option value="wall">Vẽ vách theo các điểm</option>
+              <option value="pillar_radius">Cột: tâm → mép (bán kính)</option>
+              <option value="pillar_diameter">Cột: mép → mép (đường kính)</option>
+              <option value="measure">Đo giữa hai điểm</option>
+            </select>
+          </label>
+          <label class="map-inline"><input id="mapNewWallOccludes" type="checkbox" checked> Vách mới chặn tầm nhìn (bỏ chọn để phác nét tham khảo)</label>
+          <button type="button" id="btnMapUseCamera" title="Chọn công cụ vách hoặc cột rồi click đúng chân vật thể trên frame">Chấm trên ảnh camera → map</button>
+          <label class="map-inline"><input id="mapProjectCameras" type="checkbox" checked> Chiếu vật thể lên ảnh camera để đối chiếu</label>
+          <div class="map-overlay-options">
+            <label>Kiểu chiếu trên camera
+              <select id="mapProjectionMode">
+                <option value="surface">Mảng tường + chân tường nổi bật</option>
+                <option value="volume">Trụ 3D + bbox tường</option>
+                <option value="floor">Chỉ đường chân trên sàn</option>
+              </select>
+            </label>
+            <label class="map-inline"><input id="mapOnlySelected" type="checkbox"> Chỉ hiện các vật thể đã chọn</label>
+            <label class="map-inline"><input id="mapHidePeople" type="checkbox"> Chỉ xem vật cản · ẩn box người</label>
+          </div>
+          <div id="mapDraftStatus" class="map-draft-status">Chọn công cụ để bắt đầu.</div>
+          <div id="mapDraftPoints" class="map-draft-points hidden"></div>
+          <div class="map-editor-actions"><button type="button" id="btnMapFinish" class="primary hidden">Hoàn tất vách</button><button type="button" id="btnMapCancel">Bỏ điểm đang vẽ</button></div>
+          <div class="map-editor-divider"></div>
+          <div class="map-editor-head"><strong>Vật thể</strong><span id="mapObjectCount">0</span></div>
+          <p class="muted small">Giữ Ctrl và click để chọn nhiều vật thể. Phím mũi tên dịch 1 cm theo hướng đang nhìn; Shift + mũi tên: 10 cm, Alt + mũi tên: 1 mm. Click P1/P2 hoặc tay nắm trên map để căn riêng một điểm.</p>
+          <div id="mapObjectList" class="map-object-list"></div>
+          <div id="mapObjectFields" class="map-object-fields hidden">
+            <label>Tên <input id="mapObjectName" maxlength="80"></label>
+            <label><span id="mapObjectSizeLabel">Đường kính (m)</span><input id="mapObjectSize" type="number" min="0.04" max="10" step="0.01"></label>
+            <label id="mapRadiusRow">Bán kính cột (m)<input id="mapObjectRadius" type="number" min="0.02" max="5" step="0.01"></label>
+            <label>Chiều cao tường / trụ (m)<input id="mapObjectHeight" type="number" min="0.1" max="10" step="0.1"></label>
+            <label class="map-inline"><input id="mapObjectOccludes" type="checkbox"><span id="mapObjectOccludesLabel">Vật thể này chặn tầm nhìn camera</span></label>
+            <div id="mapPointFields" class="map-point-fields"></div>
+            <p id="mapWallDeviation" class="muted small hidden"></p>
+            <button type="button" id="btnMapStraightenPoint" title="Chiếu điểm đang chọn lên đường thẳng nối hai điểm kề, giữ nguyên hai đầu">Nắn thẳng điểm giữa theo hai điểm kề</button>
+            <button type="button" id="btnMapStraightenWall" title="Chiếu tất cả điểm giữa lên đoạn thẳng nối hai đầu; nên đối chiếu lại với ảnh camera sau khi nắn">Nắn thẳng toàn vách theo hai đầu</button>
+            <button type="button" id="btnMapDelete">Xóa vật thể đang chỉnh sửa</button>
+          </div>
+          <div class="map-editor-divider"></div>
+          <details class="map-bounds"><summary>Khung nhìn bản đồ (m)</summary>
+            <div class="map-bound-grid">
+              <label>X min<input id="mapX0" type="number" step="0.1"></label>
+              <label>X max<input id="mapX1" type="number" step="0.1"></label>
+              <label>Y min<input id="mapY0" type="number" step="0.1"></label>
+              <label>Y max<input id="mapY1" type="number" step="0.1"></label>
+            </div>
+            <button type="button" id="btnMapBounds">Lưu khung nhìn</button>
+          </details>
+          <div class="map-editor-actions"><button type="button" id="btnMapDownload">Tải sơ đồ JSON</button><button type="button" id="btnMapImport">Nạp sơ đồ JSON</button><input id="mapImportFile" class="hidden" type="file" accept=".json,application/json"></div>
+          <p class="muted small">ROI của model giữ nguyên. Vách và cột là lớp tham chiếu để theo dõi và kiểm tra nhãn.</p>
+        </aside>
+      </div>
+    </div>
+    <div id="emptyHint" class="empty-hint">Mở <b>⚙ Setup</b> để chọn dataset, calibration, camera và số frame cần label.</div>
+  </section>
+
+  <aside class="side">
+    <section id="modelPanel" class="model-panel hidden">
+      <h3>Tình trạng model <button id="btnModelRefresh" class="link" type="button">Cập nhật</button></h3>
+      <p id="bevModelStatus"></p>
+      <p id="yoloModelStatus"></p>
+      <details>
+        <summary id="modelCatalogSummary">Model đã đăng ký</summary>
+        <label>Model BEV cho project này <select id="activeModel"></select></label>
+        <p id="activeModelInfo" class="small"></p>
+        <button id="btnApplyModel" type="button">Dùng model này</button>
+        <p class="muted small">Áp dụng cho lần auto-label tiếp theo. Các nhãn đã có được giữ nguyên.</p>
+      </details>
+      <p id="modelError" class="error small"></p>
+    </section>
+    <div id="inspector" class="inspector"></div>
+    <div id="metrics" class="metrics hidden">
+      <label class="gt-load">Label gốc (thư mục annotations_positions)
+        <div class="path-row"><input id="gtDir"><button type="button" data-browse="gtDir">…</button><button type="button" id="btnGtLoad">Nạp</button></div>
+      </label>
+      <div id="metricsBody"></div>
+    </div>
+    <details class="help" open>
+      <summary>Phím tắt</summary>
+      <table>
+        <tr><td><kbd>←↑→↓</kbd></td><td>dời người đang chọn (BEV: 2.5 cm, camera: 2 px chân; khi chỉnh riêng camera: dời box của camera đó); <kbd>Shift</kbd> ×5</td></tr>
+        <tr><td><kbd>Tab</kbd></td><td>người kế tiếp chưa duyệt (cần kiểm tra trước)</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>chấp nhận người đang chọn</td></tr>
+        <tr><td><kbd>Del</kbd></td><td>Chỉnh riêng camera bật: xóa box nhãn ở camera đang chọn, giữ người BEV và các camera khác. Chỉnh riêng camera tắt: xóa người toàn bộ</td></tr>
+        <tr><td><kbd>S</kbd></td><td>snap vị trí theo các box YOLO khớp</td></tr>
+        <tr><td><kbd>P</kbd> <kbd>Y</kbd> <kbd>O</kbd></td><td>box của camera đang chọn: chiếu / YOLO / tắt. O là chữ O, không phải số 0; chọn người rồi bấm “tắt” tại hàng C1–C5 trong bảng bên phải cũng được</td></tr>
+        <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>chiều cao −/+ 5 cm</td></tr>
+        <tr><td><kbd>N</kbd></td><td>thêm người dưới con trỏ (camera: tại chân; BEV: tại điểm)</td></tr>
+        <tr><td><kbd>A</kbd></td><td>thêm người từ box YOLO đang chọn</td></tr>
+        <tr><td><kbd>T</kbd></td><td>thêm box tại con trỏ (con trỏ = chân): cho người đang chọn nếu họ chưa có box ở camera này, nếu không thì thêm người mới</td></tr>
+        <tr><td><kbd>R</kbd></td><td>bật/tắt chỉnh riêng camera: kéo ✥, resize, mũi tên và Del chỉ đổi box của camera đó</td></tr>
+        <tr><td><kbd>L</kbd></td><td>lưới mặt sàn trên camera: phạm vi label + ô 25 cm quanh người đang chọn</td></tr>
+        <tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>frame trước / sau</td></tr>
+        <tr><td><kbd>Ctrl+Z</kbd></td><td>hoàn tác</td></tr>
+        <tr><td>Chuột</td><td>bấm chọn · kéo bên trong box hoặc nút ✥ để dời người ở mọi camera và BEV (tắt Chỉnh riêng camera) · kéo góc/cạnh để đổi kích thước (chỉ camera đó) · kéo điểm BEV để dời · lăn để zoom · kéo phải để pan · double-click camera để phóng to</td></tr>
+      </table>
+    </details>
+  </aside>
+</main>
+
+<dialog id="importDialog" class="dialog">
+  <div class="dialog-body">
+  <h2>Nhập nhãn từ label_tool</h2>
+  <p>Tạo project QA mới để tinh chỉnh và chốt nhãn. Các frame nhập vào chưa được đánh dấu đã review.</p>
+  <label>Dataset chứa Image_subsets <input id="iRoot" type="text"></label>
+  <button type="button" data-browse="iRoot">Chọn dataset…</button>
+  <label>Thư mục calibration (để trống: dataset/calibrations) <input id="iCalib" type="text"></label>
+  <button type="button" data-browse="iCalib">Chọn calibration…</button>
+  <label>Thư mục nhãn (để trống: dataset/annotations) <input id="iLabels" type="text"></label>
+  <button type="button" data-browse="iLabels">Chọn nhãn…</button>
+  <label>Thư mục project QA mới <input id="iOut" type="text"></label>
+  <button type="button" data-browse="iOut">Chọn nơi lưu…</button>
+  <p id="importError" class="error"></p>
+  <div class="dialog-actions"><button type="button" onclick="document.getElementById('importDialog').close()">Đóng</button>
+  <button type="button" id="btnImportRun" class="primary">Nhập và mở để review</button></div>
+  </div>
+</dialog>
+
+<dialog id="setupDialog" class="dialog wide">
+  <form method="dialog" class="dialog-body" id="setupForm">
+    <h2>Project mới</h2>
+    <div class="grid2">
+      <label>Dataset (Image_subsets/C1..CN hoặc WaveTrack/Cam01_…)
+        <div class="path-row"><input id="fRoot" required><button type="button" data-browse="fRoot">…</button></div>
+      </label>
+      <label>Calibration (để trống: tự tìm thư mục calibrations)
+        <div class="path-row"><input id="fCalib"><button type="button" data-browse="fCalib">…</button></div>
+      </label>
+    </div>
+    <button type="button" id="btnProbe">Đọc dataset + calibration</button>
+    <div id="probeResult" class="probe hidden">
+      <div id="probeSummary" class="muted"></div>
+      <fieldset id="videoSetup" class="hidden">
+        <legend>Video theo camera</legend>
+        <div id="syncProfile" class="hidden">
+          <p id="syncSummary" class="muted small"></p>
+          <button type="button" id="btnApplySync">Áp dụng đoạn đồng bộ 5 camera</button>
+        </div>
+        <p class="muted small">Mỗi camera có thể giữ một video hoặc ghép nhiều clip theo thứ tự. Dùng ↑ ↓ để đổi clip trước/sau; clip sau bắt đầu ngay khi clip trước kết thúc. Mốc bắt đầu (giây) tính từ đầu chuỗi clip và cần cùng một thời điểm thực tế ở mọi camera. Camera hết video sẽ hiển thị nền đen; các camera khác tiếp tục. Thay đổi xong, bấm “Đọc dataset + calibration” để cập nhật khoảng frame.</p>
+        <label>Tần suất lấy frame (frame/giây)
+          <input id="fTimelineFps" type="number" min="0.01" step="any" value="2">
+        </label>
+        <div id="videoSources" class="video-sources"></div>
+        <button type="button" id="btnPreviewSources">Xem ảnh tại các mốc bắt đầu</button>
+        <div id="videoPreviews" class="video-previews"></div>
+        <p id="videoNote" class="muted small"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Camera cần label <span id="camCount"></span>
+          <button type="button" class="link" id="camAll">tất cả</button>
+          <button type="button" class="link" id="camNone">bỏ hết</button></legend>
+        <div id="camChecks" class="cam-checks"></div>
+        <p class="muted small" id="camNote"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Frame</legend>
+        <div class="grid4">
+          <label>Số frame <input type="number" id="fCount" min="1" value="10"></label>
+          <label>Cách chọn
+            <select id="fStrategy">
+              <option value="even">Rải đều trong khoảng</option>
+              <option value="first">Liên tiếp từ đầu khoảng</option>
+              <option value="random">Ngẫu nhiên</option>
+              <option value="all">Tất cả frame trong khoảng</option>
+              <option value="dataset">Toàn bộ frame hiện có (bỏ qua khoảng)</option>
+            </select></label>
+          <label>Từ frame <input type="number" id="fStart"></label>
+          <label>Đến frame <input type="number" id="fEnd"></label>
+        </div>
+        <p class="muted small" id="frameNote"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Model</legend>
+        <div class="grid2">
+          <label>Checkpoint BEV <select id="fModel"></select></label>
+          <label>YOLO (detect từng ảnh)
+            <div class="path-row"><select id="fYolo"></select><input type="number" id="fConf" step="0.05" min="0.05" max="0.9" value="0.25" title="conf"></div></label>
+        </div>
+        <p id="setupModelStatus" class="small"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Chiếu box</legend>
+        <div class="grid4">
+          <label>Bán kính trụ (m) <input type="number" id="fRadius" step="0.01" value="0.20"></label>
+          <label>Chiều cao (m) <input type="number" id="fHeight" step="0.05" value="1.80"></label>
+          <label>Box ghi vào label
+            <select id="fBoxMode">
+              <option value="projected">Box chiếu (kiểu Wildtrack)</option>
+              <option value="yolo">Box YOLO khi khớp</option>
+            </select></label>
+          <label>Suggestion cần ≥ view <input type="number" id="fViews" min="1" max="7" value="2"></label>
+        </div>
+      </fieldset>
+      <label>Label gốc để so sánh (annotations_positions; để trống: của dataset nếu có)
+        <div class="path-row"><input id="fGt"><button type="button" data-browse="fGt">…</button></div>
+      </label>
+      <label>Thư mục project / output
+        <div class="path-row"><input id="fOut"><button type="button" data-browse="fOut">…</button></div>
+      </label>
+      <label class="inline"><input type="checkbox" id="fOverwrite"> Ghi đè project đã có ở thư mục này</label>
+    </div>
+    <p id="setupError" class="error"></p>
+    <div class="dialog-actions">
+      <button type="button" id="btnImportFromSetup">Nhập nhãn label_tool…</button>
+      <button type="button" id="btnOpenProject">Mở project có sẵn…</button>
+      <div class="spacer"></div>
+      <button value="cancel" formnovalidate>Đóng</button>
+      <button type="button" id="btnCreate" class="primary" disabled>Bắt đầu auto-label</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pickerDialog" class="dialog">
+  <div class="dialog-body">
+    <h2 id="pickerTitle">Chọn thư mục</h2>
+    <div class="path-row"><input id="pickerPath"><button type="button" id="pickerGo">Đi</button><button type="button" id="pickerUp">↑</button></div>
+    <ul id="pickerList" class="picker-list"></ul>
+    <div class="dialog-actions">
+      <div class="spacer"></div>
+      <button type="button" id="pickerCancel">Huỷ</button>
+      <button type="button" id="pickerUse" class="primary">Dùng thư mục này</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="exportDialog" class="dialog">
+  <form method="dialog" class="dialog-body">
+    <h2>Export dataset</h2>
+    <label>Thư mục output
+      <div class="path-row"><input id="eOut"><button type="button" data-browse="eOut">…</button></div></label>
+    <label class="inline"><input type="checkbox" id="eCopy" checked> Copy ảnh (Image_subsets) và calibrations</label>
+    <label class="inline"><input type="checkbox" id="eReviewed"> Chỉ các frame đã review</label>
+    <p class="muted small">Ghi <code>annotations_positions/*.json</code> (định dạng Wildtrack, personID nối giữa các frame), <code>labels_yolo/C*/</code> (YOLO txt) cho camera đã chọn. Suggestion chưa chấp nhận không được ghi.</p>
+    <pre id="exportResult" class="result hidden"></pre>
+    <p id="exportError" class="error"></p>
+    <div class="dialog-actions">
+      <div class="spacer"></div>
+      <button value="cancel">Đóng</button>
+      <button type="button" id="btnDoExport" class="primary">Export</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast hidden"></div>
+<script src="site-map.js"></script>
+<script src="crops.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

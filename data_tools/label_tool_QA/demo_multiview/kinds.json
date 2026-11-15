@@ -1,0 +1,33 @@
+[
+  {
+    "_comment": [
+      "Scene families of the demo besides the built-in Wildtrack and MultiviewX (see kinds.py). To add a scene,",
+      "copy this entry: the Dataset tab opens every existing folder of 'datasets', checkpoints whose log / path",
+      "names the key or an alias (or, when loaded with + Checkpoint, that have this many cameras) run on it, and",
+      "'live' adds it to the Live tab's Unity scene list.",
+      "grid: cells along world X (x) and Y (y), positionID = gx + x * gy; origin and unit of the calibration;",
+      "indexing = how the checkpoints' BEV rows run (xy: rows = world Y, as MultiviewX; ij: rows = world X).",
+      "live.unity_axes maps a Unity direction (x, y, z) to the dataset world frame (rows: world X, Y, Z).",
+      "A built-in key (wildtrack / multiviewx) may be listed to add datasets, aliases or a live entry to it."
+    ],
+    "key": "warehouse",
+    "name": "Warehouse",
+    "aliases": ["wildtrack_warehouse", "wildtrack-warehouse", "warehousex", "warehouse_sim"],
+    "cameras": 8,
+    "grid": {"x": 660, "y": 2320, "cell": 2.5, "origin": [2650, 900], "unit": "cm", "indexing": "xy"},
+    "calibration": {"intrinsic": "intrinsic_zero", "extrinsic": "text",
+                    "names": ["Camera1", "Camera2", "Camera3", "Camera4", "Camera5", "Camera6", "Camera7", "Camera8"]},
+    "default_frame": 1800,
+    "datasets": ["F:\\Warehouse", "F:\\Wildtrack_Warehouse"],
+    "live": {
+      "label": "Warehouse (Unity 6 HDRP)",
+      "unity_exe": "D:\\Unity\\6000.6.7f1\\Editor\\Unity.exe",
+      "project": "F:\\unity_projects\\warehouse",
+      "scene": "Assets/UnityWarehouseSceneHDRP/Scene_Warehouse/WarehouseSceneSample.unity",
+      "execute_method": "MultiviewSetup.MultiviewLiveSetup.Play",
+      "scripts": "unity_warehouse",
+      "unity_axes": [[1, 0, 0], [0, 0, 1], [0, 1, 0]],
+      "fps": 1.5
+    }
+  }
+]

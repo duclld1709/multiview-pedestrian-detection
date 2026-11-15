@@ -1,0 +1,106 @@
+Traceback (most recent call last):
+  File "D:\Duc_Data\Study\FPT_University_Course\FALL26_Semester_9\charuco_tool\app.py", line 74, in main
+    w = MainWindow()
+        ^^^^^^^^^^^^
+  File "D:\Duc_Data\Study\FPT_University_Course\FALL26_Semester_9\charuco_tool\gui.py", line 1318, in __init__
+    from extrinsic_gui import ExtrinsicWidget
+  File "D:\Duc_Data\Study\FPT_University_Course\FALL26_Semester_9\charuco_tool\extrinsic_gui.py", line 23, in <module>
+    import extrinsic_viz as xv
+  File "D:\Duc_Data\Study\FPT_University_Course\FALL26_Semester_9\charuco_tool\extrinsic_viz.py", line 352
+    ('' if sm['max_pair_cm'] is None else f'{sm['max_pair_cm']:.1f}')
+                                                 ^^^^^^^^^^^
+SyntaxError: f-string: f-string: unmatched '['
+
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1485, in open_project
+    self.refresh_all()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1391, in refresh_all
+    t.refresh()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1268, in refresh
+    self.fill_table()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1307, in fill_table
+    _, m = c.project(g)
+           ^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 356, in project
+    x0, x1, y0, y1 = self.norm_bounds()
+                     ^^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 339, in norm_bounds
+    n = self.normalize(b)
+        ^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 330, in normalize
+    n = cv2.undistortPoints(uv.reshape(-1, 1, 2), self.K, self.dist)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cv2.error: OpenCV(5.0.0) D:\a\opencv-python\opencv-python\opencv\modules\geometry\src\pinhole.cpp:123: error: (-215:Assertion failed) _cameraMatrix.rows == 3 && _cameraMatrix.cols == 3 && _cameraMatrix.channels() == 1 in function 'cv::undistortPointsInternal'
+
+
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1485, in open_project
+    self.refresh_all()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1391, in refresh_all
+    t.refresh()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1268, in refresh
+    self.fill_table()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1307, in fill_table
+    _, m = c.project(g)
+           ^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 356, in project
+    x0, x1, y0, y1 = self.norm_bounds()
+                     ^^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 339, in norm_bounds
+    n = self.normalize(b)
+        ^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 330, in normalize
+    n = cv2.undistortPoints(uv.reshape(-1, 1, 2), self.K, self.dist)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cv2.error: OpenCV(5.0.0) D:\a\opencv-python\opencv-python\opencv\modules\geometry\src\pinhole.cpp:123: error: (-215:Assertion failed) _cameraMatrix.rows == 3 && _cameraMatrix.cols == 3 && _cameraMatrix.channels() == 1 in function 'cv::undistortPointsInternal'
+
+
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1485, in open_project
+    self.refresh_all()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1391, in refresh_all
+    t.refresh()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1268, in refresh
+    self.fill_table()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1307, in fill_table
+    _, m = c.project(g)
+           ^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 356, in project
+    x0, x1, y0, y1 = self.norm_bounds()
+                     ^^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 339, in norm_bounds
+    n = self.normalize(b)
+        ^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 330, in normalize
+    n = cv2.undistortPoints(uv.reshape(-1, 1, 2), self.K, self.dist)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cv2.error: OpenCV(5.0.0) D:\a\opencv-python\opencv-python\opencv\modules\geometry\src\pinhole.cpp:123: error: (-215:Assertion failed) _cameraMatrix.rows == 3 && _cameraMatrix.cols == 3 && _cameraMatrix.channels() == 1 in function 'cv::undistortPointsInternal'
+
+
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1485, in open_project
+    self.refresh_all()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1391, in refresh_all
+    t.refresh()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1268, in refresh
+    self.fill_table()
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_gui.py", line 1307, in fill_table
+    _, m = c.project(g)
+           ^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 356, in project
+    x0, x1, y0, y1 = self.norm_bounds()
+                     ^^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 339, in norm_bounds
+    n = self.normalize(b)
+        ^^^^^^^^^^^^^^^^^
+  File "D:\Duc_Data\AIP491_Demo\charuco_tool\extrinsic_core.py", line 330, in normalize
+    n = cv2.undistortPoints(uv.reshape(-1, 1, 2), self.K, self.dist)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cv2.error: OpenCV(5.0.0) D:\a\opencv-python\opencv-python\opencv\modules\geometry\src\pinhole.cpp:123: error: (-215:Assertion failed) _cameraMatrix.rows == 3 && _cameraMatrix.cols == 3 && _cameraMatrix.channels() == 1 in function 'cv::undistortPointsInternal'
+
+
+----------------------------------------------------------------------
