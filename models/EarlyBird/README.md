@@ -35,6 +35,14 @@ python main.py test -c model_weights/config.yaml \
     --ckpt model_weights/model-epoch=35-val_loss=6.50.ckpt
 ```
 
+### Disable tracking loss
+
+Add `--model.use_tracking_loss false` to the training command, or set
+`use_tracking_loss: false` under `model` in the YAML configuration.
+The default is `true`. Disabling it skips both BEV/image Re-ID classification and
+contrastive losses in training and validation. Detection losses remain active.
+The tracker still runs during testing.
+
 ## BRL (this fork)
 Training with missing annotations. With `--data.init_args.drop_ratio 20/45/60` the train split reads
 `<data_dir>/drop_annotations/drop_XX/annotations_positions`; validation and test always use the full annotations.

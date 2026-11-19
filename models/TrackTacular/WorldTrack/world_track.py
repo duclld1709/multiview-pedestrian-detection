@@ -42,11 +42,13 @@ class WorldTrackModel(pl.LightningModule):
             pseudo_neg_reweight: Optional[bool] = None,
             pseudo_no_peak_loss=False,
             pseudo_positive_region: str = 'peak',
+            use_tracking_loss: bool = True,
     ):
         super().__init__()
         self.model_name = model_name
         self.encoder_name = encoder_name
         self.learning_rate = learning_rate
+        self.use_tracking_loss = use_tracking_loss
         self.resolution = resolution
         self.Y, self.Z, self.X = self.resolution
         self.bounds = bounds
@@ -215,9 +217,11 @@ class WorldTrackModel(pl.LightningModule):
         center_loss = center_losses['base']
         offset_loss = torch.abs(offset_e[:, :2] - offset_g[:, :2]).sum(dim=1, keepdim=True)
         offset_loss = basic.reduce_masked_mean(offset_loss, valid_g)
-        tracking_loss = torch.nn.functional.smooth_l1_loss(
-            offset_e[:, 2:], offset_g[:, 2:], reduction='none').sum(dim=1, keepdim=True)
-        tracking_loss = basic.reduce_masked_mean(tracking_loss, valid_g)
+        tracking_loss = center_e.new_zeros(())
+        if self.use_tracking_loss:
+            tracking_loss = torch.nn.functional.smooth_l1_loss(
+                offset_e[:, 2:], offset_g[:, 2:], reduction='none').sum(dim=1, keepdim=True)
+            tracking_loss = basic.reduce_masked_mean(tracking_loss, valid_g)
 
         if 'size_bev' in target:
             size_g = target['size_bev']
@@ -249,9 +253,13 @@ class WorldTrackModel(pl.LightningModule):
         rot_loss_weight = rot_factor * rot_loss
         rot_uncertainty_loss = self.model.rot_weight
 
-        tracking_factor = 1 / torch.exp(self.model.tracking_weight)
-        tracking_loss_weight = tracking_factor * tracking_loss
-        tracking_uncertainty_loss = self.model.tracking_weight
+        # Disable the uncertainty term too; otherwise it keeps optimizing on its own.
+        tracking_loss_weight = center_e.new_zeros(())
+        tracking_uncertainty_loss = center_e.new_zeros(())
+        if self.use_tracking_loss:
+            tracking_factor = 1 / torch.exp(self.model.tracking_weight)
+            tracking_loss_weight = tracking_factor * tracking_loss
+            tracking_uncertainty_loss = self.model.tracking_weight
 
         # img loss
         center_img_loss = center_loss_fn(basic.sigmoid(center_img_e), center_img_g)['base'] / S

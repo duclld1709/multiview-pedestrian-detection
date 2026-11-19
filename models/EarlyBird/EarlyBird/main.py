@@ -43,11 +43,13 @@ class WorldTrackModel(pl.LightningModule):
             pseudo_neg_reweight: Optional[bool] = None,
             pseudo_no_peak_loss=False,
             pseudo_positive_region: str = 'peak',
+            use_tracking_loss: bool = True,
     ):
         super().__init__()
         self.model_name = model_name
         self.encoder_name = encoder_name
         self.learning_rate = learning_rate
+        self.use_tracking_loss = use_tracking_loss
         self.resolution = resolution
         self.Y, self.Z, self.X = self.resolution
         self.bounds = bounds
@@ -210,20 +212,23 @@ class WorldTrackModel(pl.LightningModule):
         size_img_loss = basic.reduce_masked_mean(
             torch.abs(size_img_e - size_img_g).sum(dim=1, keepdim=True), valid_img_g) / (10 * S)
 
-        # re_id loss
-        valid_g = valid_g.flatten(1)
-        valid_img_g = valid_img_g.flatten(1)
-        targets = torch.cat([
-            id_g.flatten(2).transpose(1, 2)[valid_g],
-            id_img_g.flatten(2).transpose(1, 2)[valid_img_g]
-        ]).squeeze(-1)
-        feats = torch.cat([
-            feat_bev_e.flatten(2).transpose(1, 2)[valid_g],
-            feat_img_e.flatten(2).transpose(1, 2)[valid_img_g]
-        ])
-        ids = self.id_head(feats)
-        reid_class_loss = self.classification_loss(ids, targets)
-        reid_contras_loss = self.contrastive_loss(feats, targets)
+        # Skip Re-ID computation entirely when training detection only.
+        reid_class_loss = center_e.new_zeros(())
+        reid_contras_loss = center_e.new_zeros(())
+        if self.use_tracking_loss:
+            valid_g = valid_g.flatten(1)
+            valid_img_g = valid_img_g.flatten(1)
+            targets = torch.cat([
+                id_g.flatten(2).transpose(1, 2)[valid_g],
+                id_img_g.flatten(2).transpose(1, 2)[valid_img_g]
+            ]).squeeze(-1)
+            feats = torch.cat([
+                feat_bev_e.flatten(2).transpose(1, 2)[valid_g],
+                feat_img_e.flatten(2).transpose(1, 2)[valid_img_g]
+            ])
+            ids = self.id_head(feats)
+            reid_class_loss = self.classification_loss(ids, targets)
+            reid_contras_loss = self.contrastive_loss(feats, targets)
 
         loss_dict = {
             'center_loss': center_loss,
