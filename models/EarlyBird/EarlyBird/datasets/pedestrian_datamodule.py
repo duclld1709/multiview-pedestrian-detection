@@ -21,8 +21,8 @@ class PedestrianDataModule(pl.LightningDataModule):
             drop_mode: str = 'instance',
             pseudo_cache: Optional[str] = None,
             pseudo_conf_threshold: float = 0.5,
-            pseudo_sigma_m: float = 0.3,
-            pseudo_suppress_radius_m: float = 1.0,
+            pseudo_sigma_m: float = 0.15,
+            pseudo_suppress_radius_m: float = 0.0,
     ):
         super().__init__()
         self.data_dir = data_dir
@@ -40,7 +40,7 @@ class PedestrianDataModule(pl.LightningDataModule):
         # offline detector pseudo labels, train split only (needs model.use_pseudo_labels true)
         self.pseudo_cache = pseudo_cache
         self.pseudo_conf_threshold = pseudo_conf_threshold
-        self.pseudo_sigma_m = pseudo_sigma_m  # 2x the 0.15 m GT kernel
+        self.pseudo_sigma_m = pseudo_sigma_m  # matches the 0.15 m GT kernel
         self.pseudo_suppress_radius_m = pseudo_suppress_radius_m
         self.dataset = os.path.basename(self.data_dir)
 

@@ -112,7 +112,7 @@ Pseudo labels are an optional add-on to either base loss (`mse + pseudo`, `brl +
      --use_pseudo_labels --pseudo_cache pseudo_cache/wildtrack_yolo26s.json
    ```
 
-Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default 0.5 m) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (1 m) of a kept GT are dropped. The pseudo labels act in two separately switchable ways:
+Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default sqrt(5) * 0.1 m, approximately 0.2236 m, matching the GT kernel at grid_reduce=4) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (default 0 m) of a kept GT are dropped. The pseudo labels act in two separately switchable ways:
 
 | Part | Effect | Ablation flag |
 |---|---|---|

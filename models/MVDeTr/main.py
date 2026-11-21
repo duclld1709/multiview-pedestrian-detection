@@ -276,9 +276,9 @@ if __name__ == '__main__':
                         help='pseudo-peak weight for instance-drop; whole pseudo BEV loss weight for frame-drop')
     parser.add_argument('--pseudo_conf_threshold', type=float, default=0.5,
                         help='min detector score for a pseudo label')
-    parser.add_argument('--pseudo_sigma_m', type=float, default=0.5,
-                        help='std of the pseudo BEV Gaussian in metres (2x the 0.25 m GT kernel)')
-    parser.add_argument('--pseudo_suppress_radius_m', type=float, default=1.0,
+    parser.add_argument('--pseudo_sigma_m', type=float, default=0.25,
+                        help='std of the pseudo BEV Gaussian in metres (default matches the 0.25 m GT kernel)')
+    parser.add_argument('--pseudo_suppress_radius_m', type=float, default=0.0,
                         help='drop pseudo labels within this radius of a kept GT')
     parser.add_argument('--pseudo_no_neg_reweight', action='store_true', default=None,
                         help='ablation: do not scale the GT negative term by (1 - pseudo_weight)')

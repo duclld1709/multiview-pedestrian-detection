@@ -99,7 +99,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py -d wildtrack --drop_ratio 60 --loss brl \
   --use_pseudo_labels --pseudo_cache <cache.json>
 ```
 
-Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default 0.5 m = 2x the GT kernel) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (1 m) of a kept GT are dropped. Projections from different cameras are not fused, matching the MSE models. The pseudo labels act in two separately switchable ways:
+Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default 0.25 m, matching the GT kernel) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (default 0 m) of a kept GT are dropped. Projections from different cameras are not fused, matching the MSE models. The pseudo labels act in two separately switchable ways:
 
 | Part | Effect | Ablation flag |
 |---|---|---|

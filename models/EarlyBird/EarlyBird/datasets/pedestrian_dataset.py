@@ -30,8 +30,8 @@ class PedestrianDataset(VisionDataset):
             drop_mode='instance',
             pseudo_cache=None,
             pseudo_conf_threshold=0.5,
-            pseudo_sigma_m=0.3,
-            pseudo_suppress_radius_m=1.0,
+            pseudo_sigma_m=0.15,
+            pseudo_suppress_radius_m=0.0,
     ):
         super().__init__(base.root)
         self.base = base

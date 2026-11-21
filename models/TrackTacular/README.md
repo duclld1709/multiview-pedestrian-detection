@@ -95,8 +95,8 @@ python world_track.py fit -c configs/t_fit.yml -c configs/d_wildtrack.yml -c con
 ```
 
 Each box's foot point (score `>= pseudo_conf_threshold`, default 0.5) is projected to the ground plane, follows the same
-augmented world -> grid path as the GT, and is drawn as a Gaussian (`pseudo_sigma_m`, default 0.3 m = 2x the 0.15 m GT
-kernel) weighted by the detector score. Points within `pseudo_suppress_radius_m` (1 m) of a kept GT are dropped.
+augmented world -> grid path as the GT, and is drawn as a Gaussian (`pseudo_sigma_m`, default 0.15 m, matching the GT
+kernel) weighted by the detector score. Points within `pseudo_suppress_radius_m` (default 0 m) of a kept GT are dropped.
 Projections of one person from different cameras are not fused. Pseudo labels only supervise the center heatmap, not
 the offset or tracking heads. The pseudo labels act in two separately switchable ways:
 
