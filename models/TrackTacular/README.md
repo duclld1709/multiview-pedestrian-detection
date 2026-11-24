@@ -100,10 +100,10 @@ kernel) weighted by the detector score. Points within `pseudo_suppress_radius_m`
 Projections of one person from different cameras are not fused. Pseudo labels only supervise the center heatmap, not
 the offset or tracking heads. The pseudo labels act in two separately switchable ways:
 
-| Part | Effect | Ablation flag |
+| Part | Effect | Override |
 |---|---|---|
 | neg reweight | GT negative (BRL: easy-negative) term scaled by `1 - pseudo_weight` | `--model.pseudo_no_neg_reweight true` |
-| peak loss | score-weighted positive focal term at pseudo peaks, weight `pseudo_loss_weight` (0.01); peaks leave the GT negative / confuse terms | `--model.pseudo_no_peak_loss true` |
+| peak loss (off by default) | score-weighted positive focal term at pseudo peaks, weight `pseudo_loss_weight` (default 0); peaks leave the GT negative / confuse terms | `--model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01` |
 
 The pseudo term shares the center loss scale (`10 / exp(center_weight)`), so pseudo/base stays at `pseudo_loss_weight`.
 Logs: `train/pseudo_center_loss`, `train/pseudo_ratio`, `train/pseudo_peak_cells`, and a GT / pseudo / prediction
@@ -120,10 +120,10 @@ Every run uses the `mvdet` architecture. Test `last.ckpt` of every run. Each run
 | 1 | Focal | original baseline | `--model.heatmap_loss focal` |
 | 2 | BRL | effect of BRL | `--model.heatmap_loss brl` |
 | 3 | BRL, no mirror | is mirroring confuse pixels toward 1 needed? | `--model.heatmap_loss brl --model.brl_no_mirror true` |
-| 4 | Focal + pseudo | effect of pseudo labels on focal | `--model.heatmap_loss focal P` |
-| 5 | BRL + pseudo | full method | `--model.heatmap_loss brl P` |
-| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--model.heatmap_loss brl P --model.pseudo_no_peak_loss true` |
-| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--model.heatmap_loss brl P --model.pseudo_no_neg_reweight true` |
+| 4 | Focal + pseudo | effect of pseudo labels on focal | `--model.heatmap_loss focal P --model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01` |
+| 5 | BRL + pseudo | full method | `--model.heatmap_loss brl P --model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01` |
+| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--model.heatmap_loss brl P` |
+| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--model.heatmap_loss brl P --model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01 --model.pseudo_no_neg_reweight true` |
 
 Rows 1, 2, 4, 5 form the 2x2 factorial (center loss x pseudo labels); rows 5-7 ablate the pseudo-label parts.
 Example (row 7):
@@ -131,7 +131,7 @@ Example (row 7):
 python world_track.py fit -c configs/t_fit.yml -c configs/d_wildtrack.yml -c configs/m_mvdet.yml \
     --data.init_args.drop_ratio 60 --model.heatmap_loss brl \
     --data.init_args.pseudo_cache <cache.json> --model.use_pseudo_labels true \
-    --model.pseudo_no_neg_reweight true
+    --model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01 --model.pseudo_no_neg_reweight true
 ```
 
 ### Tests

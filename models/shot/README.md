@@ -43,10 +43,10 @@ Pseudo labels are an optional add-on to `--loss mse` or `--loss brl` (`mse + pse
 
 Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default sqrt(5) * 0.1 m, approximately 0.2236 m, matching the GT kernel at grid_reduce=4) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (default 0 m) of a kept GT are dropped. The pseudo labels act in two separately switchable ways:
 
-| Part | Effect | Ablation flag |
+| Part | Effect | Override |
 |---|---|---|
 | neg reweight | GT background term scaled by `1 - pseudo_weight` | `--pseudo_no_neg_reweight` |
-| peak loss | pseudo peaks pulled toward 1, weight `--pseudo_loss_weight` (0.01); peaks leave the GT background / confuse terms | `--pseudo_no_peak_loss` |
+| peak loss (off by default) | pseudo peaks pulled toward 1, weight `--pseudo_loss_weight` (default 0); peaks leave the GT background / confuse terms | `--pseudo_peak_loss --pseudo_loss_weight 0.01` |
 
 Training logs report the base and pseudo-peak loss separately. The loss modules are the same files as in MVDet. The peak term is normalised by the BEV pixel count as in MVDet, so lambda has the same meaning relative to the BEV term; relative to the total loss it is smaller here, because SHOT weights the per-view term by `N_cam * alpha`. The cache is dataset-specific; generate a separate one for MultiviewX.
 
@@ -59,15 +59,15 @@ Common flags: `-d wildtrack --drop_ratio {0,20,45,60}`; `P` = `--use_pseudo_labe
 | 1 | MSE | baseline (same target as BRL) | `--loss mse` |
 | 2 | BRL | effect of BRL | `--loss brl` |
 | 3 | BRL, no mirror | is mirroring confuse pixels toward 1 needed? | `--loss brl --brl_no_mirror` |
-| 4 | MSE + pseudo | effect of pseudo labels on MSE | `--loss mse P` |
-| 5 | BRL + pseudo | full method | `--loss brl P` |
-| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--loss brl P --pseudo_no_peak_loss` |
-| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--loss brl P --pseudo_no_neg_reweight` |
+| 4 | MSE + pseudo | effect of pseudo labels on MSE | `--loss mse P --pseudo_peak_loss --pseudo_loss_weight 0.01` |
+| 5 | BRL + pseudo | full method | `--loss brl P --pseudo_peak_loss --pseudo_loss_weight 0.01` |
+| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--loss brl P` |
+| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--loss brl P --pseudo_peak_loss --pseudo_loss_weight 0.01 --pseudo_no_neg_reweight` |
 
 Rows 1, 2, 4, 5 form the 2x2 factorial (base loss x pseudo labels); rows 5-7 ablate the pseudo-label parts. Row 0 vs row 1 measures the per-view target change alone (avg-pool vs max-pool); row 0 is not compared with BRL directly. Example (row 7):
 ```shell script
 CUDA_VISIBLE_DEVICES=0 python main.py -d wildtrack --drop_ratio 60 --loss brl \
-  --use_pseudo_labels --pseudo_cache <cache.json> --pseudo_no_neg_reweight
+  --use_pseudo_labels --pseudo_cache <cache.json> --pseudo_peak_loss --pseudo_loss_weight 0.01 --pseudo_no_neg_reweight
 ```
 
 ### Tests

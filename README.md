@@ -103,7 +103,8 @@ DROP=60          # mức drop nhãn: 20 / 45 / 60
 
 Ghi chú:
 - **AABL** trong code có tên là `brl`. Loss gốc: MVDet/SHOT = `mse`, MVDeTr/EarlyBird/TrackTacular = `focal`.
-- Siêu tham số AABL và pseudo đã để mặc định đúng cho từng mô hình, không cần truyền thêm.
+- Ở chế độ `instance`, cụm 4 và 5 mặc định chỉ giảm phạt nền theo pseudo label. Peak loss mặc định tắt và `pseudo_loss_weight` bằng 0.
+- Để bật lại peak loss với trọng số cũ, thêm `--pseudo_peak_loss --pseudo_loss_weight 0.01` (MVDet/MVDeTr/SHOT) hoặc `--model.pseudo_no_peak_loss false --model.pseudo_loss_weight 0.01` (EarlyBird/TrackTacular). Khi dùng pseudo labels cho frame bị drop, cũng cần truyền hai tham số này vì trọng số áp dụng cho toàn bộ pseudo BEV loss.
 - MVDet, MVDeTr, SHOT **tự test sau khi train**; kết quả nằm trong `logs/.../log.txt` (trong thư mục của model).
 - EarlyBird, TrackTacular cần **chạy lệnh test riêng** (mục 5).
 

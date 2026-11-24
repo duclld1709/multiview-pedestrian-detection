@@ -272,7 +272,7 @@ if __name__ == '__main__':
                         help='add offline detector evidence to the BEV training loss')
     parser.add_argument('--pseudo_cache', type=str, default=None,
                         help='JSON detection cache (same format for every model)')
-    parser.add_argument('--pseudo_loss_weight', type=float, default=0.01,
+    parser.add_argument('--pseudo_loss_weight', type=float, default=0.0,
                         help='pseudo-peak weight for instance-drop; whole pseudo BEV loss weight for frame-drop')
     parser.add_argument('--pseudo_conf_threshold', type=float, default=0.5,
                         help='min detector score for a pseudo label')
@@ -284,8 +284,11 @@ if __name__ == '__main__':
                         help='ablation: do not scale the GT negative term by (1 - pseudo_weight)')
     parser.add_argument('--pseudo_positive_region', choices=['peak', 'gaussian'], default='peak',
                         help='instance mode: positive pseudo loss on peaks or all Gaussian support')
-    parser.add_argument('--pseudo_no_peak_loss', action='store_true',
-                        help='ablation: no pseudo-peak term (peaks stay in the GT negative term)')
+    peak_options = parser.add_mutually_exclusive_group()
+    peak_options.add_argument('--pseudo_no_peak_loss', action='store_true', default=True,
+                              help='disable the pseudo-peak term (default)')
+    peak_options.add_argument('--pseudo_peak_loss', dest='pseudo_no_peak_loss', action='store_false',
+                              help='enable the pseudo-peak term with --pseudo_loss_weight')
 
     parser.add_argument('--pseudo_neg_reweight', action='store_true', default=None,
                         help='explicitly enable negative reweighting; incompatible with frame-drop + pseudo')

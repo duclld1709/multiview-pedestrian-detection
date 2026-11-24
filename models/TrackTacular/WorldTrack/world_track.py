@@ -37,10 +37,10 @@ class WorldTrackModel(pl.LightningModule):
             brl_beta=0.05,
             brl_no_mirror=False,
             use_pseudo_labels=False,
-            pseudo_loss_weight=0.01,
+            pseudo_loss_weight=0.0,
             pseudo_no_neg_reweight: Optional[bool] = None,
             pseudo_neg_reweight: Optional[bool] = None,
-            pseudo_no_peak_loss=False,
+            pseudo_no_peak_loss=True,
             pseudo_positive_region: str = 'peak',
             use_tracking_loss: bool = True,
     ):

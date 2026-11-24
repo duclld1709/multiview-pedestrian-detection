@@ -101,10 +101,10 @@ CUDA_VISIBLE_DEVICES=0 python main.py -d wildtrack --drop_ratio 60 --loss brl \
 
 Each box's foot point is projected to the BEV grid and drawn as a Gaussian (`--pseudo_sigma_m`, default 0.25 m, matching the GT kernel) weighted by detector score; boxes below `--pseudo_conf_threshold` (0.5) and points within `--pseudo_suppress_radius_m` (default 0 m) of a kept GT are dropped. Projections from different cameras are not fused, matching the MSE models. The pseudo labels act in two separately switchable ways:
 
-| Part | Effect | Ablation flag |
+| Part | Effect | Override |
 |---|---|---|
 | neg reweight | GT focal negative (BRL: easy-negative) term scaled by `1 - pseudo_weight` | `--pseudo_no_neg_reweight` |
-| peak loss | score-weighted positive focal term at pseudo peaks, weight `--pseudo_loss_weight` (0.01), normalised by the number of GT peaks; peaks leave the negative / confuse terms | `--pseudo_no_peak_loss` |
+| peak loss (off by default) | score-weighted positive focal term at pseudo peaks, weight `--pseudo_loss_weight` (default 0), normalised by the number of GT peaks; peaks leave the negative / confuse terms | `--pseudo_peak_loss --pseudo_loss_weight 0.01` |
 
 Training logs report the base and pseudo-peak loss separately. Not compatible with `--use_mse 1`.
 
@@ -116,15 +116,15 @@ Common flags: `-d wildtrack --drop_ratio {0,20,45,60} --cls_thres 0.6`; `P` = `-
 | 1 | Focal | original baseline | `--loss focal` |
 | 2 | BRL | effect of BRL | `--loss brl` |
 | 3 | BRL, no mirror | is mirroring confuse pixels toward 1 needed? | `--loss brl --brl_no_mirror` |
-| 4 | Focal + pseudo | effect of pseudo labels on focal | `--loss focal P` |
-| 5 | BRL + pseudo | full method | `--loss brl P` |
-| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--loss brl P --pseudo_no_peak_loss` |
-| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--loss brl P --pseudo_no_neg_reweight` |
+| 4 | Focal + pseudo | effect of pseudo labels on focal | `--loss focal P --pseudo_peak_loss --pseudo_loss_weight 0.01` |
+| 5 | BRL + pseudo | full method | `--loss brl P --pseudo_peak_loss --pseudo_loss_weight 0.01` |
+| 6 | BRL + pseudo, neg reweight only | contribution of neg reweight | `--loss brl P` |
+| 7 | BRL + pseudo, peak loss only | contribution of peak loss | `--loss brl P --pseudo_peak_loss --pseudo_loss_weight 0.01 --pseudo_no_neg_reweight` |
 
 Rows 1, 2, 4, 5 form the 2x2 factorial (base loss x pseudo labels); rows 5-7 ablate the pseudo-label parts. Example (row 7):
 ```shell script
 CUDA_VISIBLE_DEVICES=0 python main.py -d wildtrack --drop_ratio 60 --loss brl \
-  --use_pseudo_labels --pseudo_cache <cache.json> --pseudo_no_neg_reweight
+  --use_pseudo_labels --pseudo_cache <cache.json> --pseudo_peak_loss --pseudo_loss_weight 0.01 --pseudo_no_neg_reweight
 ```
 
 ### Tests
