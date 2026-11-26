@@ -101,10 +101,10 @@ class frameDataset(VisionDataset):
         if not os.path.isdir(self.anno_dir):
             raise FileNotFoundError(f'Annotation directory not found: {self.anno_dir}')
 
-        if train:
-            frame_range = range(0, int(self.num_frame * train_ratio))
-        else:
-            frame_range = range(int(self.num_frame * train_ratio), self.num_frame)
+        self.is_wavetrack = base.__name__ == 'WaveTrack'
+        frames = base.labeled_frames if self.is_wavetrack else range(self.num_frame)
+        split = int(self.num_frame * train_ratio)
+        frame_range = frames[:split] if train else frames[split:]
 
         self.world_from_img, self.img_from_world = self.get_world_imgs_trans()
         world_masks = torch.ones([self.num_cam, 1] + self.worldgrid_shape)
@@ -118,7 +118,9 @@ class frameDataset(VisionDataset):
         self.keeps = {}
         num_frame, num_world_bbox, num_imgs_bbox = 0, 0, 0
         num_keep, num_all = 0, 0
-        for fname in annotation_files(self.root, self.anno_dir, self.frame_pseudo):
+        files = ([base.annotation_paths[frame].name for frame in frame_range] if self.is_wavetrack else
+                 annotation_files(self.root, self.anno_dir, self.frame_pseudo))
+        for fname in files:
             if not fname.endswith('.json'):
                 continue
             frame = int(fname.split('.')[0])
@@ -127,7 +129,7 @@ class frameDataset(VisionDataset):
                 keep = np.mean(np.array(frame_range) < frame) < self.semi_supervised if self.semi_supervised else 1
                 if self.frame_pseudo and not os.path.isfile(os.path.join(self.anno_dir, fname)):
                     self.unlabeled_frames.add(frame)
-                all_pedestrians = load_annotation(self.anno_dir, fname)
+                all_pedestrians = base.read_annotations(frame) if self.is_wavetrack else load_annotation(self.anno_dir, fname)
                 world_pts, world_pids = [], []
                 img_bboxs, img_pids = [[] for _ in range(self.num_cam)], [[] for _ in range(self.num_cam)]
                 if keep:
@@ -163,8 +165,8 @@ class frameDataset(VisionDataset):
               f'recorded: world bbox: {num_world_bbox / max(num_frame, 1):.1f}, '
               f'imgs bbox per cam: {num_imgs_bbox / max(num_frame, 1) / self.num_cam:.1f}')
         # gt in mot format for evaluation
-        self.gt_fpath = os.path.join(self.root, 'gt.txt')
-        if not os.path.exists(self.gt_fpath) or force_download:
+        self.gt_fpath = None if self.is_wavetrack else os.path.join(self.root, 'gt.txt')
+        if self.gt_fpath is not None and (not os.path.exists(self.gt_fpath) or force_download):
             self.prepare_gt()
 
         pass

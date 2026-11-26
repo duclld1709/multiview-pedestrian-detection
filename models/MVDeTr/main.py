@@ -5,6 +5,7 @@ import argparse
 from multiview_detector.loss.frame_pseudo import FramePseudoLoss, validate_frame_pseudo
 import sys
 import shutil
+from pathlib import Path
 from distutils.dir_util import copy_tree
 import datetime
 import tqdm
@@ -97,8 +98,17 @@ def main(args):
         base = Wildtrack(os.path.expanduser(args.data_path or '~/Data/Wildtrack'))
     elif 'multiviewx' in args.dataset:
         base = MultiviewX(os.path.expanduser(args.data_path or '~/Data/MultiviewX'))
+    elif args.dataset == 'wavetrack':
+        if args.drop_ratio or args.use_pseudo_labels or args.semi_supervised or args.reID or args.id_ratio:
+            raise ValueError('WaveTrack supports full-label detection only')
+        sys.path.append(str(Path(__file__).resolve().parents[2]))
+        from models.wavetrack import WaveTrack
+
+        pool_stride = 4 if args.world_feat == 'trans' else 2
+        base = WaveTrack(os.path.expanduser(args.data_path or '~/Data/WaveTrack'),
+                         grid_multiple=pool_stride * args.world_reduce)
     else:
-        raise Exception('must choose from [wildtrack, multiviewx]')
+        raise ValueError(f'Unknown dataset: {args.dataset}')
     train_set = frameDataset(base, train=True, world_reduce=args.world_reduce,
                              img_reduce=args.img_reduce, world_kernel_size=args.world_kernel_size,
                              img_kernel_size=args.img_kernel_size, semi_supervised=args.semi_supervised,
@@ -158,6 +168,8 @@ def main(args):
     print(logdir)
     print('Settings:')
     print(vars(args))
+    if args.dataset == 'wavetrack':
+        print(f'WaveTrack: {len(train_set)} train frames, {len(test_set)} test frames, {base.num_cam} cameras')
 
     # model
     model = MVDeTr(train_set, args.arch, world_feat_arch=args.world_feat,
@@ -224,7 +236,7 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, default=1.0, help='ratio for per view loss')
     parser.add_argument('--use_mse', type=str2bool, default=False)
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18', 'mobilenet'])
-    parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx'])
+    parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx', 'wavetrack'])
     parser.add_argument('--data_path', type=str, default=None, help='Dataset root (default ~/Data/<dataset>)')
     parser.add_argument('-j', '--num_workers', type=int, default=4)
     parser.add_argument('-b', '--batch_size', type=int, default=1, help='input batch size for training')

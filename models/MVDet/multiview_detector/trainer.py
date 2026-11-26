@@ -118,11 +118,13 @@ class PerspectiveTrainer(BaseTrainer):
 
     def test(self, data_loader, res_fpath=None, gt_fpath=None, visualize=False):
         self.model.eval()
+        dataset = data_loader.dataset
+        base = dataset.base
         losses = 0
         precision_s, recall_s = AverageMeter(), AverageMeter()
         all_res_list = []
         t0 = time.time()
-        if res_fpath is not None:
+        if res_fpath is not None and not dataset.is_wavetrack:
             assert gt_fpath is not None
         for batch_idx, (data, map_gt, imgs_gt, frame) in enumerate(data_loader):
             with torch.no_grad():
@@ -131,12 +133,15 @@ class PerspectiveTrainer(BaseTrainer):
                 map_grid_res = map_res.detach().cpu().squeeze()
                 v_s = map_grid_res[map_grid_res > self.cls_thres].unsqueeze(1)
                 grid_ij = (map_grid_res > self.cls_thres).nonzero()
-                if data_loader.dataset.base.indexing == 'xy':
+                if base.indexing == 'xy':
                     grid_xy = grid_ij[:, [1, 0]]
                 else:
                     grid_xy = grid_ij
-                all_res_list.append(torch.cat([torch.ones_like(v_s) * frame, grid_xy.float() *
-                                               data_loader.dataset.grid_reduce, v_s], dim=1))
+                positions = grid_xy.float() * dataset.grid_reduce
+                if dataset.is_wavetrack:
+                    keep = base.contains_grid_points(positions)
+                    positions, v_s = positions[keep], v_s[keep]
+                all_res_list.append(torch.cat([torch.ones_like(v_s) * frame, positions, v_s], dim=1))
 
             base_loss, pseudo_loss = self._loss(map_res, map_gt, imgs_res, imgs_gt, data_loader.dataset)
             loss = base_loss + pseudo_loss
@@ -190,10 +195,13 @@ class PerspectiveTrainer(BaseTrainer):
                         res_list.append(torch.cat([torch.ones([count, 1]) * frame, positions[ids[:count], :]], dim=1))
 
             res_list = torch.cat(res_list, dim=0).numpy() if res_list else np.empty([0, 3])
-            np.savetxt(res_fpath, res_list, '%d')
-
-            recall, precision, moda, modp = evaluate(os.path.abspath(res_fpath), os.path.abspath(gt_fpath),
-                                                     data_loader.dataset.base.__name__)
+            if dataset.is_wavetrack:
+                np.savetxt(res_fpath, res_list, fmt=['%d', '%.8f', '%.8f'])
+                recall, precision, moda, modp = base.evaluate(res_list, dataset.map_gt)
+            else:
+                np.savetxt(res_fpath, res_list, '%d')
+                recall, precision, moda, modp = evaluate(os.path.abspath(res_fpath), os.path.abspath(gt_fpath),
+                                                         base.__name__)
 
             # If you want to use the unofiicial python evaluation tool for convenient purposes.
             # recall, precision, modp, moda = python_eval(os.path.abspath(res_fpath), os.path.abspath(gt_fpath),

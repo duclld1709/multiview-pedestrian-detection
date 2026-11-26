@@ -134,6 +134,8 @@ class PerspectiveTrainer(BaseTrainer):
 
     def test(self, epoch, dataloader, res_fpath=None, visualize=False):
         self.model.eval()
+        dataset = dataloader.dataset
+        base = dataset.base
         losses = 0
         res_list = []
         t0 = time.time()
@@ -158,7 +160,7 @@ class PerspectiveTrainer(BaseTrainer):
                                    reduce=dataloader.dataset.world_reduce)
                 # xys = mvdet_decode(world_heatmap.detach().cpu(), reduce=dataloader.dataset.world_reduce)
                 grid_xy, scores = xys[:, :, :2], xys[:, :, 2:3]
-                if dataloader.dataset.base.indexing == 'xy':
+                if base.indexing == 'xy':
                     positions = grid_xy
                 else:
                     positions = grid_xy[:, :, [1, 0]]
@@ -166,7 +168,9 @@ class PerspectiveTrainer(BaseTrainer):
                 for b in range(B):
                     ids = scores[b].squeeze() > self.cls_thres
                     pos, s = positions[b, ids], scores[b, ids, 0]
-                    res = torch.cat([torch.ones([len(s), 1]) * frame[b], pos], dim=1)
+                    if dataset.is_wavetrack:
+                        keep = base.contains_grid_points(pos)
+                        pos, s = pos[keep], s[keep]
                     ids, count = nms(pos, s, 20, np.inf)
                     res = torch.cat([torch.ones([count, 1]) * frame[b], pos[ids[:count]]], dim=1)
                     res_list.append(res)
@@ -192,10 +196,13 @@ class PerspectiveTrainer(BaseTrainer):
 
         if res_fpath is not None:
             res_list = torch.cat(res_list, dim=0).numpy() if res_list else np.empty([0, 3])
-            np.savetxt(res_fpath, res_list, '%d')
-            recall, precision, moda, modp = evaluate(os.path.abspath(res_fpath),
-                                                     os.path.abspath(dataloader.dataset.gt_fpath),
-                                                     dataloader.dataset.base.__name__)
+            if dataset.is_wavetrack:
+                np.savetxt(res_fpath, res_list, fmt=['%d', '%.8f', '%.8f'])
+                recall, precision, moda, modp = base.evaluate(res_list, dataset.world_gt)
+            else:
+                np.savetxt(res_fpath, res_list, '%d')
+                recall, precision, moda, modp = evaluate(os.path.abspath(res_fpath),
+                                                         os.path.abspath(dataset.gt_fpath), base.__name__)
             print(f'moda: {moda:.1f}%, modp: {modp:.1f}%, prec: {precision:.1f}%, recall: {recall:.1f}%')
         else:
             moda = 0

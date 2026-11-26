@@ -5,6 +5,7 @@ import argparse
 from multiview_detector.loss.frame_pseudo import FramePseudoLoss, validate_frame_pseudo
 import sys
 import shutil
+from pathlib import Path
 from distutils.dir_util import copy_tree
 import datetime
 import tqdm
@@ -76,8 +77,15 @@ def main(args):
     elif 'multiviewx' in args.dataset:
         data_path = os.path.expanduser(args.data_path or '~/Data/MultiviewX')
         base = MultiviewX(data_path)
+    elif args.dataset == 'wavetrack':
+        if args.drop_ratio or args.use_pseudo_labels or args.reID:
+            raise ValueError('WaveTrack supports full-label detection only')
+        sys.path.append(str(Path(__file__).resolve().parents[2]))
+        from models.wavetrack import WaveTrack
+
+        base = WaveTrack(os.path.expanduser(args.data_path or '~/Data/WaveTrack'))
     else:
-        raise Exception('must choose from [wildtrack, multiviewx]')
+        raise ValueError(f'Unknown dataset: {args.dataset}')
     
     if args.use_pseudo_labels and not args.pseudo_cache:
         raise ValueError('--use_pseudo_labels requires --pseudo_cache')
@@ -144,6 +152,8 @@ def main(args):
         sys.stdout = Logger(os.path.join(logdir, 'log.txt'), )
     print('Settings:')
     print(vars(args))
+    if args.dataset == 'wavetrack':
+        print(f'WaveTrack: {len(train_set)} train frames, {len(test_set)} test frames, {base.num_cam} cameras')
 
     # draw curve
     x_epoch = []
@@ -194,7 +204,7 @@ if __name__ == '__main__':
     parser.add_argument('--variant', type=str, default='default',
                         choices=['default', 'img_proj', 'res_proj', 'no_joint_conv'])
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18'])
-    parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx'])
+    parser.add_argument('-d', '--dataset', type=str, default='wildtrack', choices=['wildtrack', 'multiviewx', 'wavetrack'])
     parser.add_argument('--data_path', type=str, default=None, help='Dataset root')
     parser.add_argument('-j', '--num_workers', type=int, default=4)
     parser.add_argument('-b', '--batch_size', type=int, default=1, metavar='N',

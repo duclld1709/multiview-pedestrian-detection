@@ -55,18 +55,18 @@ class frameDataset(VisionDataset):
         if not os.path.isdir(self.anno_dir):
             raise FileNotFoundError(f'Annotation directory not found: {self.anno_dir}')
 
-        if train:
-            frame_range = range(0, int(self.num_frame * train_ratio))
-        else:
-            frame_range = range(int(self.num_frame * train_ratio), self.num_frame)
+        self.is_wavetrack = base.__name__ == 'WaveTrack'
+        frames = base.labeled_frames if self.is_wavetrack else range(self.num_frame)
+        split = int(self.num_frame * train_ratio)
+        frame_range = frames[:split] if train else frames[split:]
 
         self.img_fpaths = self.base.get_image_fpaths(frame_range)
         self.map_gt = {}
         self.imgs_head_foot_gt = {}
         self.download(frame_range)
 
-        self.gt_fpath = os.path.join(self.root, 'gt.txt')
-        if not os.path.exists(self.gt_fpath) or force_download:
+        self.gt_fpath = None if self.is_wavetrack else os.path.join(self.root, 'gt.txt')
+        if self.gt_fpath is not None and (not os.path.exists(self.gt_fpath) or force_download):
             self.prepare_gt()
 
         x, y = np.meshgrid(np.arange(-map_kernel_size, map_kernel_size + 1),
@@ -112,14 +112,17 @@ class frameDataset(VisionDataset):
         np.savetxt(self.gt_fpath, og_gt, '%d')
 
     def download(self, frame_range):
-        for fname in annotation_files(self.root, self.anno_dir, self.frame_pseudo):
+        files = ([self.base.annotation_paths[frame].name for frame in frame_range] if self.is_wavetrack else
+                 annotation_files(self.root, self.anno_dir, self.frame_pseudo))
+        for fname in files:
             if not fname.endswith('.json'):
                 continue
             frame = int(fname.split('.')[0])
             if frame in frame_range:
                 if self.frame_pseudo and not os.path.isfile(os.path.join(self.anno_dir, fname)):
                     self.unlabeled_frames.add(frame)
-                all_pedestrians = load_annotation(self.anno_dir, fname)
+                all_pedestrians = (self.base.read_annotations(frame) if self.is_wavetrack else
+                                   load_annotation(self.anno_dir, fname))
                 i_s, j_s, v_s = [], [], []
                 head_row_cam_s, head_col_cam_s = [[] for _ in range(self.num_cam)], \
                                                  [[] for _ in range(self.num_cam)]
@@ -136,11 +139,12 @@ class frameDataset(VisionDataset):
                         j_s.append(int(y / self.grid_reduce))
                     v_s.append(single_pedestrian['personID'] + 1 if self.reID else 1)
                     for cam in range(self.num_cam):
-                        x = max(min(int((single_pedestrian['views'][cam]['xmin'] +
-                                         single_pedestrian['views'][cam]['xmax']) / 2), self.img_shape[1] - 1), 0)
-                        y_head = max(single_pedestrian['views'][cam]['ymin'], 0)
-                        y_foot = min(single_pedestrian['views'][cam]['ymax'], self.img_shape[0] - 1)
-                        if x > 0 and y > 0:
+                        view = single_pedestrian['views'][cam]
+                        x = max(min(int((view['xmin'] + view['xmax']) / 2), self.img_shape[1] - 1), 0)
+                        y_head = max(view['ymin'], 0)
+                        y_foot = min(view['ymax'], self.img_shape[0] - 1)
+                        visible = view['xmin'] >= 0 if self.is_wavetrack else x > 0 and y > 0
+                        if visible:
                             head_row_cam_s[cam].append(y_head)
                             head_col_cam_s[cam].append(x)
                             foot_row_cam_s[cam].append(y_foot)

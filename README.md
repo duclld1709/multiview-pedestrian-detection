@@ -1,7 +1,7 @@
 # Hướng dẫn chạy thực nghiệm
 
 5 mô hình: **MVDet**, **MVDeTr**, **SHOT**, **EarlyBird**, **TrackTacular**.
-Mọi lệnh bên dưới chạy bằng bash (Linux / Git Bash), bắt đầu từ thư mục `original/`.
+Các lệnh chạy từ thư mục gốc của repo. Mỗi khối ghi rõ Bash hoặc PowerShell.
 
 ## 0. Cài môi trường (Kaggle / server GPU thuê / PC có GPU)
 
@@ -53,11 +53,62 @@ original/
 │   │   ├── Image_subsets/
 │   │   ├── annotations_positions/
 │   │   └── calibrations/
-│   └── MultiviewX/           # (tuỳ chọn) cấu trúc tương tự
+│   ├── MultiviewX/           # (tuỳ chọn) cấu trúc tương tự
+│   └── WaveTrack/            # dùng với MVDet và MVDeTr
 ├── data_tools/
 └── models/
     └── MVDet/  MVDeTr/  shot/  EarlyBird/  TrackTacular/
 ```
+
+### WaveTrack full label trên Windows
+
+WaveTrack dùng 5 camera thật và lưới BEV 241 × 313 với bước 2,5 cm. Repo chia 90/10 theo
+thứ tự ID frame. Với bản 870 frame, train dùng 783 frame đầu và test dùng 87 frame cuối.
+MVDet dùng MSE, MVDeTr dùng focal loss. Tải ZIP gồm `Image_subsets`,
+`annotations_positions` và `calibrations` với `grid.json`, `intrinsic_zero` và `extrinsic`.
+
+Trong PowerShell, điền link chia sẻ của file ZIP rồi chạy từ thư mục repo.
+Nếu đã đặt dataset trong `Data\WaveTrack`, chạy thẳng khối train.
+
+```powershell
+$driveUrl = 'DAN_LINK_ZIP_WAVETRACK'
+$downloads = Join-Path $PWD.Path 'Data\_downloads'
+$wave = Join-Path $PWD.Path 'Data\WaveTrack'
+if (Test-Path -LiteralPath $wave) { throw "Đã có $wave" }
+New-Item -ItemType Directory -Path $downloads -Force -ErrorAction Stop | Out-Null
+$zip = Join-Path $downloads 'WaveTrack.zip'
+uvx --python 3.11 gdown --continue --retries 3 $driveUrl -O $zip
+if ($LASTEXITCODE -ne 0) { throw 'Tải WaveTrack thất bại' }
+$staging = Join-Path $downloads ("WaveTrack-" + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $staging -ErrorAction Stop | Out-Null
+tar.exe -xf $zip -C $staging
+if ($LASTEXITCODE -ne 0) { throw 'Giải nén WaveTrack thất bại' }
+$roots = @(Get-ChildItem -LiteralPath $staging -Directory -Recurse -Filter 'annotations_positions' |
+    ForEach-Object { $_.Parent.FullName } |
+    Where-Object {
+        (Test-Path -LiteralPath (Join-Path $_ 'Image_subsets') -PathType Container) -and
+        (Test-Path -LiteralPath (Join-Path $_ 'calibrations\grid.json') -PathType Leaf) -and
+        (Test-Path -LiteralPath (Join-Path $_ 'calibrations\intrinsic_zero') -PathType Container) -and
+        (Test-Path -LiteralPath (Join-Path $_ 'calibrations\extrinsic') -PathType Container)
+    })
+if ($roots.Count -ne 1) { throw "Cần đúng một thư mục WaveTrack trong $staging" }
+Move-Item -LiteralPath $roots[0] -Destination $wave -ErrorAction Stop
+```
+
+```powershell
+$gitRoot = Split-Path (Split-Path (Get-Command git.exe -ErrorAction Stop).Source)
+$gitBash = Join-Path $gitRoot 'bin\bash.exe'
+$wave = Join-Path $PWD.Path 'Data\WaveTrack'
+$env:CUDA_VISIBLE_DEVICES = '0'
+
+# Nếu chưa có môi trường, chạy: & $gitBash setup_env.sh mvdet mvdetr
+& $gitBash run.sh mvdet -d wavetrack --data_path "$wave" --drop_ratio 0 --loss mse -j 0
+& $gitBash run.sh mvdetr -d wavetrack --data_path "$wave" --drop_ratio 0 --loss focal -j 0
+```
+
+Thêm `--epochs 1` để kiểm tra trên GPU trước khi chạy mặc định 10 epoch. Hai model tự
+đánh giá sau khi train. Log nằm ở `models/MVDet/logs/wavetrack_frame/full/mse/` và
+`models/MVDeTr/logs/wavetrack/full/focal/`.
 
 ## 2. Chuẩn bị dữ liệu (chạy 1 lần)
 
