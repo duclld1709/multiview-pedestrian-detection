@@ -55,6 +55,8 @@ def build_criterion(args):
 
 def main(args):
     use_aux_branch = not args.no_aux_branch
+    if args.camera_fusion == 'meanmax' and args.variant != 'default':
+        raise ValueError('meanmax camera fusion requires the default MVDet variant')
     if not use_aux_branch and args.variant == 'res_proj':
         raise ValueError('res_proj needs the per-view heatmaps to build the BEV output')
     validate_frame_pseudo(args.drop_mode, args.drop_ratio, args.use_pseudo_labels,
@@ -109,7 +111,8 @@ def main(args):
 
     # model
     if args.variant == 'default':
-        model = PerspTransDetector(train_set, args.arch, use_aux_branch=use_aux_branch)
+        model = PerspTransDetector(train_set, args.arch, use_aux_branch=use_aux_branch,
+                                   camera_fusion=args.camera_fusion)
     elif args.variant == 'img_proj':
         model = ImageProjVariant(train_set, args.arch, use_aux_branch=use_aux_branch)
     elif args.variant == 'res_proj':
@@ -146,6 +149,8 @@ def main(args):
             loss_tag += '_posgaussian'
     if not use_aux_branch:
         loss_tag += '_noaux'
+    if args.camera_fusion == 'meanmax':
+        loss_tag += '_meanmax'
     logdir = f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/' + datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S') \
         if not args.resume else f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/{args.resume}'
     if args.resume is None:
@@ -209,6 +214,8 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, default=1.0, help='ratio for per view loss')
     parser.add_argument('--no_aux_branch', action='store_true',
                         help='train only the BEV branch, without auxiliary per-view heatmaps')
+    parser.add_argument('--camera_fusion', choices=['concat', 'meanmax'], default='concat',
+                        help='combine projected camera features with concat or mean and max pooling')
     parser.add_argument('--variant', type=str, default='default',
                         choices=['default', 'img_proj', 'res_proj', 'no_joint_conv'])
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18'])

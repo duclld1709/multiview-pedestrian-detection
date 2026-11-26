@@ -120,6 +120,17 @@ theo camera và loss tương ứng. Log và checkpoint nằm trong thư mục `m
 Khi dùng `--resume` cho lượt train này, truyền lại `--no_aux_branch`. Biến thể `res_proj`
 cần heatmap theo camera để tạo đầu ra BEV.
 
+Với MVDet biến thể mặc định, thêm `--camera_fusion meanmax` để lấy mean và max trên trục
+camera sau khi chiếu lên BEV. Kích thước trọng số giữ cố định khi đổi số camera. Mỗi rig
+cần calibration tương ứng với các ảnh đầu vào.
+
+```powershell
+& $gitBash run.sh mvdet -d wavetrack --data_path "$wave" --drop_ratio 0 --loss mse --no_aux_branch --camera_fusion meanmax -j 0
+```
+
+Log và checkpoint nằm trong `mse_noaux_meanmax/`. Dùng lại `--camera_fusion meanmax`
+khi gọi `--resume` cho lượt train này. Các checkpoint concat dùng `--camera_fusion concat`.
+
 ## 2. Chuẩn bị dữ liệu (chạy 1 lần)
 
 Cần venv `tools`: `bash setup_env.sh tools`.

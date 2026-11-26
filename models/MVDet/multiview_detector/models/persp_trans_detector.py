@@ -11,8 +11,11 @@ import matplotlib.pyplot as plt
 
 
 class PerspTransDetector(nn.Module):
-    def __init__(self, dataset, arch='resnet18', use_aux_branch=True):
+    def __init__(self, dataset, arch='resnet18', use_aux_branch=True, camera_fusion='concat'):
         super().__init__()
+        if camera_fusion not in ('concat', 'meanmax'):
+            raise ValueError(f'Unknown camera fusion: {camera_fusion}')
+        self.camera_fusion = camera_fusion
         self.num_cam = dataset.num_cam
         self.img_shape, self.reducedgrid_shape = dataset.img_shape, dataset.reducedgrid_shape
         imgcoord2worldgrid_matrices = self.get_imgcoord2worldgrid_matrices(dataset.base.intrinsic_matrices,
@@ -50,7 +53,13 @@ class PerspTransDetector(nn.Module):
         img_classifier = nn.Sequential(nn.Conv2d(out_channel, 64, 1), nn.ReLU(),
                                        nn.Conv2d(64, 2, 1, bias=False))
         self.img_classifier = img_classifier.to('cuda:0') if use_aux_branch else None
-        self.map_classifier = nn.Sequential(nn.Conv2d(out_channel * self.num_cam + 2, 512, 3, padding=1), nn.ReLU(),
+        fused_channels = out_channel * self.num_cam
+        if self.camera_fusion == 'meanmax':
+            fused_channels = 2 * out_channel
+            # Two-camera concat also has 2 * out_channel inputs. Mark meanmax checkpoints
+            # so strict loading distinguishes the two layouts even when their shapes match.
+            self.register_buffer('_meanmax_fusion', torch.tensor(True))
+        self.map_classifier = nn.Sequential(nn.Conv2d(fused_channels + 2, 512, 3, padding=1), nn.ReLU(),
                                             # nn.Conv2d(512, 512, 5, 1, 2), nn.ReLU(),
                                             nn.Conv2d(512, 512, 3, padding=2, dilation=2), nn.ReLU(),
                                             nn.Conv2d(512, 1, 3, padding=4, dilation=4, bias=False)).to('cuda:0')
@@ -76,6 +85,9 @@ class PerspTransDetector(nn.Module):
                 plt.show()
             world_features.append(world_feature.to('cuda:0'))
 
+        if self.camera_fusion == 'meanmax':
+            views = torch.stack(world_features, dim=1)
+            world_features = [views.mean(dim=1), views.amax(dim=1)]
         world_features = torch.cat(world_features + [self.coord_map.repeat([B, 1, 1, 1]).to('cuda:0')], dim=1)
         if visualize:
             plt.imshow(torch.norm(world_features[0].detach(), dim=0).cpu().numpy())
