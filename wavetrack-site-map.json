@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "bounds": [
+    -3,
+    12,
+    -4.5,
+    10.5
+  ],
+  "flip_vertical": false,
+  "flip_horizontal": false,
+  "objects": [
+    {
+      "id": "room_back",
+      "kind": "wall",
+      "name": "Tường sau phòng chính · C1/C4",
+      "points": [
+        [
+          5.37,
+          -0.3
+        ],
+        [
+          -1.65,
+          -0.3
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "room_right",
+      "kind": "wall",
+      "name": "Tường bên phòng chính · C1",
+      "points": [
+        [
+          -1.65,
+          -0.3
+        ],
+        [
+          -1.65,
+          3
+        ],
+        [
+          -0.01,
+          6.18
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "room_c2_left",
+      "kind": "wall",
+      "name": "Tường bên phòng cột · C2",
+      "points": [
+        [
+          -0.01,
+          6.18
+        ],
+        [
+          2.58,
+          10.5
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "room_far_closure",
+      "kind": "wall",
+      "name": "Tường cuối phòng · vị trí ước lượng",
+      "points": [
+        [
+          2.58,
+          10.5
+        ],
+        [
+          9.81,
+          10.5
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8,
+      "estimated": true
+    },
+    {
+      "id": "partition_main",
+      "kind": "wall",
+      "name": "Vách phòng – hành lang · C1/C3/C5",
+      "points": [
+        [
+          5.37,
+          1.9
+        ],
+        [
+          5.49,
+          3
+        ],
+        [
+          7.13,
+          5.85
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "door_room_far",
+      "kind": "wall",
+      "name": "Cửa phòng phía cột · C2/C3",
+      "points": [
+        [
+          7.13,
+          5.85
+        ],
+        [
+          7.93,
+          7.24
+        ]
+      ],
+      "width": 0.1,
+      "height": 2.2,
+      "occludes": false,
+      "role": "door"
+    },
+    {
+      "id": "corridor_left_far",
+      "kind": "wall",
+      "name": "Vách phòng – hành lang phía xa",
+      "points": [
+        [
+          7.93,
+          7.24
+        ],
+        [
+          9.81,
+          10.5
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8,
+      "estimated": true
+    },
+    {
+      "id": "door_room_near",
+      "kind": "wall",
+      "name": "Cửa phòng chính · C1/C5",
+      "points": [
+        [
+          5.37,
+          0.45
+        ],
+        [
+          5.37,
+          1.9
+        ]
+      ],
+      "width": 0.1,
+      "height": 2.2,
+      "occludes": false,
+      "role": "door"
+    },
+    {
+      "id": "c5_wall_between_doors_3",
+      "kind": "wall",
+      "name": "Vách giữa các cửa · C5",
+      "points": [
+        [
+          5.37,
+          -0.68
+        ],
+        [
+          5.37,
+          -0.3
+        ],
+        [
+          5.37,
+          0.45
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "door_c5_end",
+      "kind": "wall",
+      "name": "Cửa phía cuối hành lang · C5",
+      "points": [
+        [
+          5.37,
+          -3.3
+        ],
+        [
+          5.37,
+          -0.68
+        ]
+      ],
+      "width": 0.1,
+      "height": 2.2,
+      "occludes": false,
+      "role": "door"
+    },
+    {
+      "id": "c5_wall_between_doors_2",
+      "kind": "wall",
+      "name": "Vách cuối hành lang · C5",
+      "points": [
+        [
+          6.26,
+          -3.3
+        ],
+        [
+          5.37,
+          -3.3
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "door_corridor_end",
+      "kind": "wall",
+      "name": "Cửa cạnh góc hành lang · C5",
+      "points": [
+        [
+          6.75,
+          -2.89
+        ],
+        [
+          6.26,
+          -3.3
+        ]
+      ],
+      "width": 0.1,
+      "height": 2.2,
+      "occludes": false,
+      "role": "door"
+    },
+    {
+      "id": "c5_wall_between_doors_1",
+      "kind": "wall",
+      "name": "Vách đối diện phòng · C5",
+      "points": [
+        [
+          8.2565,
+          0.1109
+        ],
+        [
+          6.75,
+          -2.89
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "corridor_outer_near",
+      "kind": "wall",
+      "name": "Vách ngoài nối C5–C3 · ước lượng",
+      "points": [
+        [
+          10.07,
+          3.04
+        ],
+        [
+          8.2565,
+          0.1109
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8,
+      "estimated": true
+    },
+    {
+      "id": "corridor_right_block",
+      "kind": "wall",
+      "name": "Khối vách phải hành lang · C3",
+      "points": [
+        [
+          10.34,
+          6.54
+        ],
+        [
+          10.07,
+          3.04
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8
+    },
+    {
+      "id": "corridor_outer_far",
+      "kind": "wall",
+      "name": "Vách ngoài phía xa · ước lượng",
+      "points": [
+        [
+          11.9,
+          10.5
+        ],
+        [
+          10.34,
+          6.54
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8,
+      "estimated": true
+    },
+    {
+      "id": "corridor_far_closure",
+      "kind": "wall",
+      "name": "Giới hạn hành lang phía xa · ước lượng",
+      "points": [
+        [
+          9.81,
+          10.5
+        ],
+        [
+          11.9,
+          10.5
+        ]
+      ],
+      "width": 0.16,
+      "height": 2.8,
+      "estimated": true
+    },
+    {
+      "id": "mmw9iwuq2_6dfrt4",
+      "kind": "pillar",
+      "name": "Cột 1",
+      "center": [
+        5.5764,
+        6.7629
+      ],
+      "radius": 0.3712,
+      "height": 2.8
+    }
+  ],
+  "floor_regions": [
+    {
+      "name": "Phòng học",
+      "points": [
+        [
+          -1.65,
+          -0.3
+        ],
+        [
+          5.37,
+          -0.3
+        ],
+        [
+          5.37,
+          0.45
+        ],
+        [
+          5.37,
+          1.9
+        ],
+        [
+          5.49,
+          3
+        ],
+        [
+          7.13,
+          5.85
+        ],
+        [
+          7.93,
+          7.24
+        ],
+        [
+          9.81,
+          10.5
+        ],
+        [
+          2.58,
+          10.5
+        ],
+        [
+          -0.01,
+          6.18
+        ],
+        [
+          -1.65,
+          3
+        ]
+      ]
+    },
+    {
+      "name": "Hành lang",
+      "points": [
+        [
+          5.37,
+          -3.3
+        ],
+        [
+          6.26,
+          -3.3
+        ],
+        [
+          6.75,
+          -2.89
+        ],
+        [
+          8.2565,
+          0.1109
+        ],
+        [
+          10.07,
+          3.04
+        ],
+        [
+          10.34,
+          6.54
+        ],
+        [
+          11.9,
+          10.5
+        ],
+        [
+          9.81,
+          10.5
+        ],
+        [
+          7.93,
+          7.24
+        ],
+        [
+          7.13,
+          5.85
+        ],
+        [
+          5.49,
+          3
+        ],
+        [
+          5.37,
+          1.9
+        ],
+        [
+          5.37,
+          0.45
+        ],
+        [
+          5.37,
+          -0.3
+        ],
+        [
+          5.37,
+          -0.68
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MVPD</title>
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="toolbar" aria-label="Realtime demo controls">
+    <button id="toggle" type="button" aria-label="Resume inference" title="Resume inference" disabled><span class="playback-icon" aria-hidden="true"></span></button>
+    <div class="transport">
+      <span class="transport-title">Multiview Pedestrian Detection Demo</span>
+      <div class="transport-controls">
+        <input id="timeline" type="range" min="0" max="0" value="0" disabled aria-label="Seek position">
+        <div class="timecode"><strong id="time">00:00.000</strong><span id="duration">/ —</span></div>
+      </div>
+    </div>
+    <nav class="toolbar-menus" aria-label="Demo options">
+      <details id="dataset-menu" class="menu" hidden>
+        <summary id="dataset-label">Dataset</summary>
+        <div class="menu-panel dataset-options">
+          <label for="dataset-select">Active dataset</label>
+          <select id="dataset-select"></select>
+          <button id="dataset-settings" type="button">Dataset folder settings</button>
+        </div>
+      </details>
+      <details class="menu">
+        <summary>Display</summary>
+        <div class="menu-panel view-options">
+          <label><input id="show-bbox" type="checkbox" checked>Bounding boxes</label>
+          <label><input id="show-occluded-bbox" type="checkbox">Occluded boxes</label>
+          <label><input id="show-roi" type="checkbox" checked>ROI</label>
+          <label><input id="show-grid" type="checkbox">Grid</label>
+        </div>
+      </details>
+      <details id="settings-menu" class="menu">
+        <summary>Settings</summary>
+        <div class="menu-panel settings">
+          <form id="dataset-form">
+            <fieldset id="dataset-fields"><legend>Dataset</legend>
+              <label for="dataset-root">Dataset folder</label>
+              <div class="folder-field">
+                <input id="dataset-root" type="text" spellcheck="false" required>
+                <button type="submit">Scan</button>
+              </div>
+              <div id="dataset-scan-report" role="status"></div>
+            </fieldset>
+          </form>
+          <fieldset><legend>Model and source</legend>
+            <label for="model">Checkpoint</label><select id="model"></select>
+            <small id="model-fallback" hidden></small>
+            <label for="source">Video source</label><select id="source"><option value="cache">FP16 cache</option><option value="mp4">Direct MP4</option></select>
+            <div class="menu-actions"><button id="load">Load model</button></div>
+          </fieldset>
+          <form id="cache-form" hidden>
+            <fieldset id="cache-fields"><legend>FP16 cache</legend>
+              <label for="cache-directory">Cache folder for this dataset</label>
+              <div class="folder-field">
+                <input id="cache-directory" type="text" spellcheck="false" required>
+                <button type="submit" formnovalidate>Scan</button>
+              </div>
+              <div class="cache-generate">
+                <label for="cache-fps">FPS</label>
+                <input id="cache-fps" type="number" min="0" step="any">
+                <button id="cache-generate" type="submit">Generate</button>
+              </div>
+              <div id="cache-estimate"></div>
+              <div id="cache-ready" role="status"></div>
+            </fieldset>
+            <div id="cache-job" hidden>
+              <div id="cache-job-label" role="status"></div>
+              <progress id="cache-progress" aria-label="Cache generation progress" max="100"></progress>
+              <button id="cache-cancel" type="button">Cancel</button>
+            </div>
+          </form>
+          <fieldset><legend>Playback</legend>
+            <label for="playback-mode">Playback mode</label>
+            <select id="playback-mode" disabled><option value="realtime">Realtime</option><option value="sequential">Sequential</option></select>
+            <label for="batch">Batch</label><select id="batch" disabled><option>1</option><option>2</option><option>4</option><option>8</option></select>
+          </fieldset>
+          <details class="advanced-settings">
+            <summary>Advanced</summary>
+            <fieldset id="mp4-options" disabled><legend>Input source</legend>
+              <label id="mp4-remap-label"><input id="mp4-fused-remap" type="checkbox">Combine undistortion and resizing</label>
+              <label><input id="mp4-prefetch" type="checkbox">Prefetch frames during inference</label>
+            </fieldset>
+          </details>
+          <div class="session-status">
+            <div id="message" role="status">Connecting to the demo…</div>
+            <div id="cache-meta"></div>
+            <div id="position"></div>
+          </div>
+        </div>
+      </details>
+      <details id="scenario-menu" class="menu">
+        <summary>Scenarios</summary>
+        <div class="menu-panel settings">
+          <form id="scenario-form">
+            <fieldset id="scenario-fields" disabled>
+              <legend id="scenario-active">Free playback</legend>
+              <label for="scenario-list">Saved scenarios</label>
+              <select id="scenario-list"><option value="">New scenario</option></select>
+              <label for="scenario-name">Scenario name</label><input id="scenario-name" type="text" maxlength="80" required>
+              <div class="scenario-times">
+                <label>Start (seconds)<input id="scenario-start" type="number" min="0" step="any" required></label>
+                <label>End (seconds)<input id="scenario-end" type="number" min="0" step="any" required></label>
+              </div>
+              <div class="menu-actions"><button id="scenario-save" type="submit">Add</button><button id="scenario-delete" type="button" disabled>Delete</button></div>
+              <div class="menu-actions"><button id="scenario-enter" type="button" disabled>Activate scenario</button><button id="scenario-exit" type="button" disabled>Exit scenario</button></div>
+            </fieldset>
+          </form>
+          <div id="scenario-error" role="alert" hidden></div>
+        </div>
+      </details>
+      <details id="benchmark-panel" class="menu">
+        <summary>Benchmark</summary>
+        <div class="menu-panel benchmark">
+          <div class="menu-actions"><button id="benchmark">Run benchmark</button><span id="benchmark-summary">No results yet</span></div>
+          <div class="table-scroll"><table><thead><tr><th>Batch</th><th>FPS</th><th>Median</th><th>P95</th><th>Input span</th><th>Cameras</th></tr></thead><tbody id="benchmark-rows"></tbody></table></div>
+        </div>
+      </details>
+    </nav>
+  </header>
+  <main>
+    <section class="workspace" aria-label="Camera feeds and bird’s-eye view">
+      <div id="cameras" class="camera-grid"></div>
+      <aside class="bev-area" aria-label="BEV">
+        <canvas id="bev" width="536" height="536" aria-label="Bird’s-eye view with the region of interest, camera directions, and pedestrian positions"></canvas>
+        <dl class="bev-metrics"><div><dt>Display FPS</dt><dd id="fps">—</dd></div><div><dt>GPU / batch</dt><dd id="gpu">—</dd></div></dl>
+      </aside>
+    </section>
+  </main>
+  <dialog id="dataset-setup" aria-labelledby="dataset-setup-title">
+    <form id="dataset-setup-form">
+      <h1 id="dataset-setup-title">Choose your Dataset folder</h1>
+      <p>Enter the folder on this machine that contains WaveTrack, Wildtrack or MultiviewX.</p>
+      <label for="dataset-setup-root">Dataset folder</label>
+      <input id="dataset-setup-root" type="text" spellcheck="false" required autofocus>
+      <div id="dataset-setup-error" role="alert" hidden></div>
+      <div class="menu-actions"><button id="dataset-setup-scan" type="submit">Scan datasets</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
