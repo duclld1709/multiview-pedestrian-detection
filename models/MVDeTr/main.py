@@ -50,6 +50,12 @@ def build_focal_loss(args):
     return criterion
 
 
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2 ** 32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 def main(args):
     validate_frame_pseudo(args.drop_mode, args.drop_ratio, args.use_pseudo_labels,
                          args.pseudo_neg_reweight, args.pseudo_no_neg_reweight,
@@ -106,11 +112,6 @@ def main(args):
                             img_reduce=args.img_reduce, world_kernel_size=args.world_kernel_size,
                             img_kernel_size=args.img_kernel_size, drop_ratio=args.drop_ratio,
                             drop_mode=args.drop_mode)
-
-    def seed_worker(worker_id):
-        worker_seed = torch.initial_seed() % 2 ** 32
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
 
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                               pin_memory=True, worker_init_fn=seed_worker)

@@ -38,7 +38,7 @@ command -v nvidia-smi >/dev/null 2>&1 || die "không thấy nvidia-smi: cần GP
 ver2int() { awk -F. '{printf "%d", $1 * 100 + $2}' <<<"$1"; }
 GPU_NAMES=$(nvidia-smi --query-gpu=name --format=csv,noheader | sort -u | paste -sd ',' -)
 GPU_CCS=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | tr -d ' \r' | sort -t. -k1,1n -k2,2n -u)
-DRV_CUDA=$(nvidia-smi | sed -n 's/.*CUDA Version: *\([0-9][0-9.]*\).*/\1/p' | head -1)
+DRV_CUDA=$(nvidia-smi | sed -nE 's/.*CUDA( UMD)? Version: *([0-9]+\.[0-9]+).*/\2/p' | head -1)
 [ -n "$GPU_CCS" ] && [ -n "$DRV_CUDA" ] || die "không đọc được compute capability / CUDA version từ nvidia-smi"
 CC_MIN=$(ver2int "$(head -1 <<<"$GPU_CCS")")
 CC_MAX=$(ver2int "$(tail -1 <<<"$GPU_CCS")")
