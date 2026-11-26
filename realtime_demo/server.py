@@ -14,7 +14,7 @@ from realtime_demo.workspace import Workspace, user_config
 
 
 class Handler(SimpleHTTPRequestHandler):
-    WEB_ASSETS = {'/', '/index.html', '/style.css', '/app.js', '/roi_visibility.mjs'}
+    WEB_ASSETS = {'/', '/index.html', '/style.css', '/app.js', '/roi_visibility.mjs', '/cylinder.mjs'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT / 'realtime_demo/web'), **kwargs)

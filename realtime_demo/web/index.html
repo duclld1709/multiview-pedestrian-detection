@@ -29,8 +29,10 @@
       <details class="menu">
         <summary>Display</summary>
         <div class="menu-panel view-options">
-          <label><input id="show-bbox" type="checkbox" checked>Bounding boxes</label>
-          <label><input id="show-occluded-bbox" type="checkbox">Occluded boxes</label>
+          <label><input id="show-bbox" type="checkbox" checked>People overlays</label>
+          <label>Shape <select id="person-shape"><option value="bbox">Bounding boxes</option><option value="cylinder">Cylinders (H 1.8 m, R 0.25 m)</option></select></label>
+          <label><input id="show-occluded-bbox" type="checkbox">Occluded people</label>
+          <small>Double-click a view to focus / restore. When paused, click a view then Tab to select each person (Shift+Tab: previous).</small>
           <label><input id="show-roi" type="checkbox" checked>ROI</label>
           <label><input id="show-grid" type="checkbox">Grid</label>
         </div>

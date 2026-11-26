@@ -1,0 +1,41 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local Python environments
+.venv/
+.venv-*/
+venv/
+env/
+
+# Generated packages and build metadata
+/build/
+/dist/
+*.egg-info/
+
+# Local demo data, frame caches and generated outputs
+/data/
+/Dataset/
+/realtime_demo/cache_data/
+/outputs/
+**/outputs/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo

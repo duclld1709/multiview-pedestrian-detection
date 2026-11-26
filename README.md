@@ -49,6 +49,12 @@ Dataset/
 
 Chỉ cần có một trong ba bộ. Với Wildtrack và MultiviewX, dùng **Direct images** để chạy bộ ảnh gốc. Để dùng **Direct MP4**, thêm đủ MP4 đã đồng bộ theo thứ tự camera với tên `cam1.mp4`, `cam2.mp4`, v.v. tại thư mục dataset hoặc `videos/`. Video dùng kích thước ảnh theo calibration và FPS bằng nhau. MP4 mặc định dùng hệ ảnh đã khử méo. Với WaveTrack raw, đặt đủ XML gốc trong `calibrations/intrinsic_original/` để demo khử méo tại chỗ. MP4 trong `videos_rectified/` luôn được đọc theo calibration đã khử méo. [Wildtrack](https://www.epfl.ch/labs/cvlab/data/data-wildtrack/) · [MultiviewX và MVDet](https://github.com/hou-yz/MVDet)
 
+## Tương tác dashboard
+
+- Double click vào một view để chỉ xem camera đó và BEV bên cạnh; double click lần nữa để trở về layout trước đó.
+- Trong **Display**, chọn **Shape → Cylinders** để thay bbox bằng hình trụ cao **1,8 m**, bán kính **0,25 m**, đặt tại điểm BEV của mỗi người. Hình trụ dùng calibration của camera và màu của bbox. **People overlays** bật/tắt nhãn ở các view; **Occluded people** cho phép hiện cả người bị che khuất.
+- Khi đã **Pause** và frame đang xem có kết quả inference, click vào view rồi nhấn **Tab** để lần lượt chọn từng người; **Shift+Tab** chọn ngược lại. Người được chọn hiện xanh lá trên BEV và bbox/hình trụ ở các view. Chạy tiếp, đổi frame hoặc đổi dataset sẽ xóa lựa chọn. Xem và chọn người khi dừng không chạy inference mới.
+
 ## Checkpoint
 
 | Dataset | Tên file trong `checkpoints/` |

@@ -1,5 +1,6 @@
 import {cameraRoiSegments} from './roi_visibility.mjs';
 import {bodyVisible, obstacles} from '/map_visualization/physics.mjs';
+import {drawCylinder} from './cylinder.mjs';
 
 const $=id=>document.getElementById(id);
 let scene,state,renderedKey='',rendering=false,lastPeople=[];
@@ -8,11 +9,22 @@ let sceneRevision, datasetPending=false, cachePending=false;
 let refreshedOnOpen = false;
 let shownDatasetRoot, shownCacheDirectory, datasetListKey, sourceListKey;
 let clockAnchor=0, clockAnchorAt=performance.now();
+let selectedPerson = -1, focusedCamera = null;
+const predictionKey = value => value?.latest
+  ? `${value.scene_revision}:${value.generation}:${value.latest.frame}` : null;
+function resetPersonSelection() {
+  if (selectedPerson === -1) return;
+  selectedPerson = -1;
+  drawCameras();
+  drawBev();
+}
 function acceptState(value){
   if (state && value.scene_revision < state.scene_revision) return;
   if (value.phase === 'error' && state?.phase !== 'error') openMenu($('settings-menu'));
   state=value;clockAnchor=value.playhead_s||0;clockAnchorAt=performance.now();
+  if (value.phase !== 'paused' || predictionKey(value) !== displayedPrediction) resetPersonSelection();
 }
+let displayedPrediction = null;
 const cards=new Map();
 const formatTime=t=>{const m=Math.floor(t/60),s=Math.floor(t%60),ms=Math.floor((t%1)*1000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`};
 const fixed=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
@@ -22,6 +34,7 @@ let mp4OptionsPending = false;
 let controlError = '';
 
 async function action(path, body={}) {
+  if (path === 'resume' || path === 'benchmark') resetPersonSelection();
   const scenarioAction = path.startsWith('scenarios/');
   const setupAction = path === 'datasets/scan' && $('dataset-setup').open;
   controlError = '';
@@ -48,6 +61,13 @@ function makeCards() {
     const div = document.createElement('div');
     div.className = 'camera-card';
     div.dataset.name = cam.name;
+    div.title = 'Double-click to focus this view / restore layout';
+    div.addEventListener('dblclick', event => {
+      if (event.target.closest('button')) return;
+      focusedCamera = focusedCamera === cam.id ? null : cam.id;
+      document.querySelector('.workspace').classList.toggle('focused', focusedCamera !== null);
+      for (const [id, card] of cards) card.div.classList.toggle('focused-camera', id === focusedCamera);
+    });
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 360;
@@ -87,6 +107,10 @@ async function syncScene() {
   if (value.scene_revision !== state.scene_revision || value.scene_revision === sceneRevision) return;
   sceneRevision = value.scene_revision;
   scene = value.cameras.length ? value : null;
+  focusedCamera = null;
+  selectedPerson = -1;
+  displayedPrediction = null;
+  document.querySelector('.workspace').classList.remove('focused');
   cards.clear();
   $('cameras').replaceChildren();
   $('bev').getContext('2d').clearRect(0, 0, $('bev').width, $('bev').height);
@@ -165,17 +189,23 @@ function drawCameras() {
     ctx.lineWidth = 2;
     ctx.font = '11px Segoe UI';
     ctx.textAlign = 'left';
-    for (const person of lastPeople) {
+    const cylinderMode = $('person-shape').value === 'cylinder';
+    const people = cylinderMode ? [...lastPeople].sort((a, b) =>
+      Math.hypot(b.x - cam.center[0], b.y - cam.center[1]) -
+      Math.hypot(a.x - cam.center[0], a.y - cam.center[1])) : lastPeople;
+    for (const person of people) {
       const box = person.boxes[cam.id];
       if (!box || (!showOccluded && !bodyVisible(cam, person, box, bboxOccluders))) continue;
       const [left, top, right, bottom] = box;
       const x = left * sx, y = top * sy;
-      ctx.strokeStyle = person.inside ? '#ffbf69' : '#aabbd0';
-      ctx.strokeRect(x, y, (right - left) * sx, (bottom - top) * sy);
+      const color = lastPeople[selectedPerson] === person ? '#00ff00' : person.inside ? '#ffbf69' : '#aabbd0';
+      ctx.strokeStyle = color;
+      if (cylinderMode) drawCylinder(ctx, cam, person, color, sx, sy);
+      else ctx.strokeRect(x, y, (right - left) * sx, (bottom - top) * sy);
       const labelY = Math.max(14, y);
       ctx.fillStyle = '#0a101bda';
       ctx.fillRect(x, labelY - 15, 48, 15);
-      ctx.fillStyle = '#ffdbab';
+      ctx.fillStyle = lastPeople[selectedPerson] === person ? '#00ff00' : '#ffdbab';
       ctx.fillText(Math.round(person.score * 100) + '%', x + 4, labelY - 4);
     }
   }
@@ -213,11 +243,19 @@ function drawBev(people = lastPeople) {
     const y = Math.round(padding + (yMax - person.y) * scale);
     ctx.beginPath();
     ctx.arc(x, y, 6.5, 0, 2 * Math.PI);
-    ctx.fillStyle = person.inside ? '#ed9744' : '#9bafc6';
+    const highlighted = lastPeople[selectedPerson] === person;
+    ctx.fillStyle = highlighted ? '#00ff00' : person.inside ? '#ed9744' : '#9bafc6';
     ctx.fill();
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#eff3f4';
     ctx.stroke();
+    if (highlighted) {
+      ctx.beginPath();
+      ctx.arc(x, y, 11, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -384,6 +422,8 @@ async function render() {
   const {latest, selected, generation} = state;
   if (generation !== renderedGeneration) {
     renderedGeneration = generation;
+    selectedPerson = -1;
+    displayedPrediction = null;
     lastPeople = [];
     for (const card of cards.values()) card.image = null;
     drawCameras();
@@ -404,6 +444,8 @@ async function render() {
     }));
     if (state.generation !== generation) return;
     for (const [id, image] of loaded) cards.get(id).image = image;
+    selectedPerson = -1;
+    displayedPrediction = latest ? predictionKey({scene_revision: sceneRevision, generation, latest}) : null;
     lastPeople = latest?.people || [];
     renderedKey = key;
     drawCameras();
@@ -513,6 +555,7 @@ $('timeline').addEventListener('change', () => action('config', {frame: +$('time
 $('batch').onchange = () => action('config', {batch: +$('batch').value});
 $('playback-mode').onchange = () => action('config', {mode: $('playback-mode').value});
 $('show-bbox').onchange = drawCameras;
+$('person-shape').onchange = drawCameras;
 $('show-occluded-bbox').onchange = drawCameras;
 $('show-roi').onchange = () => { drawCameras(); drawBev(); };
 $('show-grid').onchange = drawCameras;
@@ -596,6 +639,18 @@ document.addEventListener('click', event => {
   for (const menu of menus) if (menu !== active) menu.open = false;
 });
 document.addEventListener('keydown', event => {
+  if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey &&
+      state?.phase === 'paused' && lastPeople.length && displayedPrediction === predictionKey(state) &&
+      !rendering && !menus.some(menu => menu.open) && !document.querySelector('dialog[open]') &&
+      !event.target.closest('input, select, textarea, button:not(#toggle), summary, a, [contenteditable="true"]')) {
+    event.preventDefault();
+    selectedPerson = event.shiftKey
+      ? (selectedPerson <= 0 ? lastPeople.length - 1 : selectedPerson - 1)
+      : (selectedPerson + 1) % lastPeople.length;
+    drawCameras();
+    drawBev();
+    return;
+  }
   if (event.key !== 'Escape') return;
   const active = menus.find(menu => menu.open);
   if (active) {
