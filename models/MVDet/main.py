@@ -54,6 +54,9 @@ def build_criterion(args):
     return criterion.cuda()
 
 def main(args):
+    use_aux_branch = not args.no_aux_branch
+    if not use_aux_branch and args.variant == 'res_proj':
+        raise ValueError('res_proj needs the per-view heatmaps to build the BEV output')
     validate_frame_pseudo(args.drop_mode, args.drop_ratio, args.use_pseudo_labels,
                          args.pseudo_neg_reweight, args.pseudo_no_neg_reweight,
                          args.pseudo_no_peak_loss, args.pseudo_loss_weight, args.pseudo_positive_region)
@@ -94,9 +97,10 @@ def main(args):
                              pseudo_cache=args.pseudo_cache if args.use_pseudo_labels else None,
                              pseudo_conf_threshold=args.pseudo_conf_threshold,
                              pseudo_sigma_m=args.pseudo_sigma_m,
-                             pseudo_suppress_radius_m=args.pseudo_suppress_radius_m)
+                             pseudo_suppress_radius_m=args.pseudo_suppress_radius_m,
+                             use_aux_branch=use_aux_branch)
     test_set = frameDataset(base, train=False, transform=train_trans, grid_reduce=4, drop_ratio=args.drop_ratio,
-                           drop_mode=args.drop_mode)
+                           drop_mode=args.drop_mode, use_aux_branch=use_aux_branch)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True,
                                                num_workers=args.num_workers, pin_memory=True)
@@ -105,13 +109,13 @@ def main(args):
 
     # model
     if args.variant == 'default':
-        model = PerspTransDetector(train_set, args.arch)
+        model = PerspTransDetector(train_set, args.arch, use_aux_branch=use_aux_branch)
     elif args.variant == 'img_proj':
-        model = ImageProjVariant(train_set, args.arch)
+        model = ImageProjVariant(train_set, args.arch, use_aux_branch=use_aux_branch)
     elif args.variant == 'res_proj':
         model = ResProjVariant(train_set, args.arch)
     elif args.variant == 'no_joint_conv':
-        model = NoJointConvVariant(train_set, args.arch)
+        model = NoJointConvVariant(train_set, args.arch, use_aux_branch=use_aux_branch)
     else:
         raise Exception('no support for this variant')
 
@@ -140,6 +144,8 @@ def main(args):
             loss_tag += '_nopeak'
         if args.pseudo_positive_region == 'gaussian':
             loss_tag += '_posgaussian'
+    if not use_aux_branch:
+        loss_tag += '_noaux'
     logdir = f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/' + datetime.datetime.today().strftime('%Y-%m-%d_%H-%M-%S') \
         if not args.resume else f'logs/{args.dataset}_frame/{drop_tag}/{loss_tag}/{args.variant}/{args.resume}'
     if args.resume is None:
@@ -201,6 +207,8 @@ if __name__ == '__main__':
     parser.add_argument('--reID', action='store_true')
     parser.add_argument('--cls_thres', type=float, default=0.4)
     parser.add_argument('--alpha', type=float, default=1.0, help='ratio for per view loss')
+    parser.add_argument('--no_aux_branch', action='store_true',
+                        help='train only the BEV branch, without auxiliary per-view heatmaps')
     parser.add_argument('--variant', type=str, default='default',
                         choices=['default', 'img_proj', 'res_proj', 'no_joint_conv'])
     parser.add_argument('--arch', type=str, default='resnet18', choices=['vgg11', 'resnet18'])

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class NoJointConvVariant(nn.Module):
-    def __init__(self, dataset, arch='resnet18'):
+    def __init__(self, dataset, arch='resnet18', use_aux_branch=True):
         super().__init__()
         self.num_cam = dataset.num_cam
         self.img_shape, self.reducedgrid_shape = dataset.img_shape, dataset.reducedgrid_shape
@@ -46,8 +46,10 @@ class NoJointConvVariant(nn.Module):
         else:
             raise Exception('architecture currently support [vgg11, resnet18]')
         # 2.5cm -> 0.5m: 20x
-        self.img_classifier = nn.Sequential(nn.Conv2d(out_channel, 64, 1), nn.ReLU(),
-                                            nn.Conv2d(64, 2, 1, bias=False)).to('cuda:0')
+        # Keep the same initialization order for the BEV head across ablations.
+        img_classifier = nn.Sequential(nn.Conv2d(out_channel, 64, 1), nn.ReLU(),
+                                       nn.Conv2d(64, 2, 1, bias=False))
+        self.img_classifier = img_classifier.to('cuda:0') if use_aux_branch else None
         self.map_classifier = nn.Sequential(nn.Conv2d(out_channel * self.num_cam + 2, 512, 1), nn.ReLU(),
                                             # nn.Conv2d(512, 512, 1), nn.ReLU(),
                                             nn.Conv2d(512, 1, 1, bias=False)).to('cuda:0')
@@ -62,8 +64,8 @@ class NoJointConvVariant(nn.Module):
             img_feature = self.base_pt1(imgs[:, cam].to('cuda:0'))
             img_feature = self.base_pt2(img_feature.to('cuda:0'))
             img_feature = F.interpolate(img_feature, self.upsample_shape, mode='bilinear')
-            img_res = self.img_classifier(img_feature.to('cuda:0'))
-            imgs_result.append(img_res)
+            if self.img_classifier is not None:
+                imgs_result.append(self.img_classifier(img_feature.to('cuda:0')))
             proj_mat = self.proj_mats[cam].repeat([B, 1, 1]).float().to('cuda:0')
             world_feature = kornia.warp_perspective(img_feature.to('cuda:0'), proj_mat, self.reducedgrid_shape)
             if visualize:

@@ -14,12 +14,14 @@ class frameDataset(VisionDataset):
     def __init__(self, base, train=True, transform=ToTensor(), target_transform=ToTensor(),
                  reID=False, grid_reduce=4, img_reduce=4, train_ratio=0.9, force_download=True,
                  drop_ratio=0, drop_mode='instance', pseudo_cache=None, pseudo_conf_threshold=0.5,
-                 pseudo_sigma_m=0.1 * (20 / 4) ** 0.5, pseudo_suppress_radius_m=0.0):
+                 pseudo_sigma_m=0.1 * (20 / 4) ** 0.5, pseudo_suppress_radius_m=0.0,
+                 use_aux_branch=True):
         super().__init__(base.root, transform=transform, target_transform=target_transform)
 
         map_sigma, map_kernel_size = 20 / grid_reduce, 20
         img_sigma, img_kernel_size = 10 / img_reduce, 10
         self.reID, self.grid_reduce, self.img_reduce = reID, grid_reduce, img_reduce
+        self.use_aux_branch = use_aux_branch
 
         self.base = base
         self.root, self.num_cam, self.num_frame = base.root, base.num_cam, base.num_frame
@@ -77,6 +79,9 @@ class frameDataset(VisionDataset):
         kernel_size = map_kernel.shape[0]
         self.map_kernel = torch.zeros([1, 1, kernel_size, kernel_size], requires_grad=False)
         self.map_kernel[0, 0] = torch.from_numpy(map_kernel)
+
+        if not self.use_aux_branch:
+            return
 
         x, y = np.meshgrid(np.arange(-img_kernel_size, img_kernel_size + 1),
                            np.arange(-img_kernel_size, img_kernel_size + 1))
@@ -138,6 +143,8 @@ class frameDataset(VisionDataset):
                         i_s.append(int(x / self.grid_reduce))
                         j_s.append(int(y / self.grid_reduce))
                     v_s.append(single_pedestrian['personID'] + 1 if self.reID else 1)
+                    if not self.use_aux_branch:
+                        continue
                     for cam in range(self.num_cam):
                         view = single_pedestrian['views'][cam]
                         x = max(min(int((view['xmin'] + view['xmax']) / 2), self.img_shape[1] - 1), 0)
@@ -152,6 +159,8 @@ class frameDataset(VisionDataset):
                             v_cam_s[cam].append(single_pedestrian['personID'] + 1 if self.reID else 1)
                 occupancy_map = coo_matrix((v_s, (i_s, j_s)), shape=self.reducedgrid_shape)
                 self.map_gt[frame] = occupancy_map
+                if not self.use_aux_branch:
+                    continue
                 self.imgs_head_foot_gt[frame] = {}
                 for cam in range(self.num_cam):
                     img_gt_head = coo_matrix((v_cam_s[cam], (head_row_cam_s[cam], head_col_cam_s[cam])),
@@ -176,9 +185,10 @@ class frameDataset(VisionDataset):
         if self.target_transform is not None:
             map_gt = self.target_transform(map_gt)
         imgs_gt = []
-        for cam in range(self.num_cam):
-            img_gt_head = self.imgs_head_foot_gt[frame][cam][0].toarray()
-            img_gt_foot = self.imgs_head_foot_gt[frame][cam][1].toarray()
+        for cam in range(self.num_cam if self.use_aux_branch else 0):
+            head_gt, foot_gt = self.imgs_head_foot_gt[frame][cam]
+            img_gt_head = head_gt.toarray()
+            img_gt_foot = foot_gt.toarray()
             img_gt = np.stack([img_gt_head, img_gt_foot], axis=2)
             if self.reID:
                 img_gt = (img_gt > 0).int()

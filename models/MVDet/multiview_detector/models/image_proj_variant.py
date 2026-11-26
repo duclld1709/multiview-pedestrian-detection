@@ -14,8 +14,9 @@ import cv2
 
 
 class ImageProjVariant(nn.Module):
-    def __init__(self, dataset, arch='resnet18'):
+    def __init__(self, dataset, arch='resnet18', use_aux_branch=True):
         super().__init__()
+        self.use_aux_branch = use_aux_branch
         self.num_cam = dataset.num_cam
         self.img_shape, self.reducedgrid_shape = dataset.img_shape, dataset.reducedgrid_shape
         imgcoord2worldgrid_matrices = self.get_imgcoord2worldgrid_matrices(dataset.base.intrinsic_matrices,
@@ -62,8 +63,8 @@ class ImageProjVariant(nn.Module):
         projected_imgs = []
         imgs_result = []
         for cam in range(self.num_cam):
-            img_res = torch.zeros([B, 2, H, W], requires_grad=False).to('cuda:0')
-            imgs_result.append(img_res)
+            if self.use_aux_branch:
+                imgs_result.append(torch.zeros([B, 2, H, W], requires_grad=False).to('cuda:0'))
             img_res = F.interpolate(imgs[:, cam].to('cuda:0'), self.upsample_shape, mode='bilinear')
             proj_mat = self.proj_mats[cam].repeat([B, 1, 1]).float().to('cuda:0')
             img_feature = kornia.warp_perspective(img_res, proj_mat, self.reducedgrid_shape)

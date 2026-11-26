@@ -44,7 +44,9 @@ class PerspectiveTrainer(BaseTrainer):
             loss += self.criterion(img_res, img_gt.to(img_res.device), dataset.img_kernel)['base']
         map_loss = self.criterion(map_res, map_gt.to(map_res.device), dataset.map_kernel,
                                   pseudo_target, pseudo_weight)
-        base_loss = map_loss['base'] + loss / len(imgs_gt) * self.alpha
+        base_loss = map_loss['base']
+        if imgs_res:
+            base_loss = base_loss + loss / len(imgs_gt) * self.alpha
         return base_loss, map_loss['pseudo']
 
     def train(self, epoch, data_loader, optimizer, log_interval=100, cyclic_scheduler=None):
@@ -168,6 +170,7 @@ class PerspectiveTrainer(BaseTrainer):
             plt.savefig(os.path.join(self.logdir, 'map.jpg'))
             plt.close(fig)
 
+        if visualize and imgs_res:
             # visualizing the heatmap for per-view estimation
             heatmap0_head = imgs_res[0][0, 0].detach().cpu().numpy().squeeze()
             heatmap0_foot = imgs_res[0][0, 1].detach().cpu().numpy().squeeze()

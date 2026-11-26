@@ -110,6 +110,16 @@ Thêm `--epochs 1` để kiểm tra trên GPU trước khi chạy mặc định 
 đánh giá sau khi train. Log nằm ở `models/MVDet/logs/wavetrack_frame/full/mse/` và
 `models/MVDeTr/logs/wavetrack/full/focal/`.
 
+Với MVDet, thêm `--no_aux_branch` để train chỉ với nhánh BEV. Cờ này bỏ heatmap phụ
+theo camera và loss tương ứng. Log và checkpoint nằm trong thư mục `mse_noaux/`.
+
+```powershell
+& $gitBash run.sh mvdet -d wavetrack --data_path "$wave" --drop_ratio 0 --loss mse --no_aux_branch -j 0
+```
+
+Khi dùng `--resume` cho lượt train này, truyền lại `--no_aux_branch`. Biến thể `res_proj`
+cần heatmap theo camera để tạo đầu ra BEV.
+
 ## 2. Chuẩn bị dữ liệu (chạy 1 lần)
 
 Cần venv `tools`: `bash setup_env.sh tools`.
