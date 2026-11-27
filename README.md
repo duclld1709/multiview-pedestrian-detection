@@ -6,6 +6,26 @@ Giải nén `MVPD_Demo.zip`, cài `uv` và mở terminal trong thư mục vừa 
 
 **1. Setup môi trường (Windows và Linux)**
 
+Kiểm tra `uv` đã được cài chưa:
+
+```sh
+uv --version
+```
+
+Cài `uv` nếu lệnh trên chưa chạy được:
+
+**Linux và macOS**
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
 ```sh
 uv run --no-project --python 3.11 python setup_demo.py
 ```
@@ -43,6 +63,14 @@ uv run --no-project --python 3.11 --with "gdown>=5.2,<6" python setup_dataset.py
 ```sh
 uv run --no-project --python 3.11 --with "gdown>=5.2,<6" python setup_dataset.py --dest "/home/user/data"
 ```
+
+Nếu `gdown` tải từ Google Drive gặp lỗi, có thể chép dataset đã có trên máy lên server bằng `rsync` (chạy trong Git Bash/WSL hoặc môi trường có `rsync` và SSH):
+
+```sh
+rsync -avP /d/Duc_Data/AIP491/Dataset/ user@server_ip:/home/ezycloudx-admin/multiview-pedestrian-detection/Dataset/
+```
+
+Trên Git Bash, đường dẫn Windows `D:\Duc_Data\AIP491\Dataset` được viết thành `/d/Duc_Data/AIP491/Dataset/`. Trên WSL, dùng đường dẫn tương ứng, ví dụ `/mnt/d/Duc_Data/AIP491/Dataset/`. Thay `user` và `server_ip` bằng thông tin SSH của server. Dấu `/` cuối đường dẫn nguồn sẽ chép **nội dung** dataset vào thư mục `Dataset/` trên server.
 
 Script dùng `gdown --folder --continue` để tải thư mục. Google Drive hiện chứa ba ZIP riêng (`WaveTrack.zip`, `Wildtrack.zip`, `MultiviewX.zip`), không cần tạo ZIP chung trên Drive. Script cũng hỗ trợ ZIP ngoài chứa các ZIP con: giải nén lần lượt các lớp và xóa từng ZIP **sau khi giải nén thành công**, rồi chuẩn hóa thành:
 
