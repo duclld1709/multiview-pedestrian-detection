@@ -19,7 +19,7 @@ def main():
         parser.error(f'Missing required checkpoint {required}')
     source_files = [root / name for name in (
         'calib.py', 'cylinders.py', 'site_layout.py', 'subset_data.py', 'wavetrack-site-map.json',
-        'requirements-demo.txt', 'setup_demo.py',
+        'requirements-demo.txt', 'setup_demo.py', 'setup_dataset.py',
         'map_visualization/physics.mjs')]
     package_files = [p for p in (root / 'multiview_detector').rglob('*.py') if p.name != 'legacy.py']
     demo = root / 'realtime_demo'

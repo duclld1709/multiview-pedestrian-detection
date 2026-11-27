@@ -26,7 +26,36 @@ Thêm `--backend cpu` vào cuối lệnh setup nếu muốn dùng CPU.
 . .venv-mvpd/bin/activate
 ```
 
-**3. Chạy server web**
+**3. Tải và chuẩn bị dataset (nếu máy chưa có)**
+
+Chạy tại thư mục demo. Lệnh sau tự cài `gdown` trong môi trường tạm của `uv`, tải [thư mục dataset trên Google Drive](https://drive.google.com/drive/folders/1k4qLz_JNe6sHdKfp_rqpPhl8zgZ1ENSf?usp=sharing) và chuẩn bị `./Dataset/`:
+
+```sh
+uv run --no-project --python 3.11 --with "gdown>=5.2,<6" python setup_dataset.py
+```
+
+Để chọn nơi lưu, thêm `--dest` (thư mục cha của `Dataset/`, mặc định là thư mục hiện tại `.`):
+
+```powershell
+uv run --no-project --python 3.11 --with "gdown>=5.2,<6" python setup_dataset.py --dest "D:\Duc_Data\AIP491"
+```
+
+```sh
+uv run --no-project --python 3.11 --with "gdown>=5.2,<6" python setup_dataset.py --dest "/home/user/data"
+```
+
+Script dùng `gdown --folder --continue` để tải thư mục. Google Drive hiện chứa ba ZIP riêng (`WaveTrack.zip`, `Wildtrack.zip`, `MultiviewX.zip`), không cần tạo ZIP chung trên Drive. Script cũng hỗ trợ ZIP ngoài chứa các ZIP con: giải nén lần lượt các lớp và xóa từng ZIP **sau khi giải nén thành công**, rồi chuẩn hóa thành:
+
+```text
+<dest>/Dataset/
+  WaveTrack/
+  Wildtrack/
+  MultiviewX/
+```
+
+Nếu cả ba dataset đã có calibration và dữ liệu camera, script bỏ qua tải. Dataset đã có được giữ nguyên; thư mục đích tồn tại nhưng chưa đầy đủ sẽ báo lỗi để tránh ghi đè. Nếu tải hoặc giải nén bị gián đoạn, chạy lại cùng lệnh; dữ liệu tải tạm nằm trong `<dest>/.mvpd-dataset-download/`. Cuối cùng script in đường dẫn tuyệt đối tới **Dataset** để nhập vào web. Ví dụ Windows phía trên cho kết quả `D:\Duc_Data\AIP491\Dataset`.
+
+**4. Chạy server web**
 
 ```sh
 python -m realtime_demo.server
@@ -62,6 +91,8 @@ Chỉ cần có một trong ba bộ. Với Wildtrack và MultiviewX, dùng **Dir
 | WaveTrack | `wavetrack_best.pt` (có trong ZIP) |
 | Wildtrack | `bevnet_wildtrack.pt` |
 | MultiviewX | `bevnet_multiviewx.pt` |
+
+Demo cũng tự nhận checkpoint `wavetrack_lite.pt`, `wildtrack_lite.pt`, `multiviewx_lite.pt` (hoặc `bevnet_<dataset>_lite.pt`). Khi đổi dataset, ưu tiên checkpoint riêng của bộ đó; nếu chưa có thì dùng checkpoint WaveTrack đang có và chiếu theo calibration của dataset được chọn.
 
 Khi một bộ chưa có trọng số riêng, demo dùng trọng số WaveTrack và chiếu theo calibration của bộ đang xem. Kết quả suy luận chéo phụ thuộc mức độ khác biệt giữa hai bộ. Khi có checkpoint BEVNet riêng, đặt đúng tên trong `checkpoints/` rồi quét lại hoặc khởi động lại. Các checkpoint BEVNet cũ vẫn đọc được từ **Settings → Checkpoint**, kể cả các checkpoint đã huấn luyện thêm nhánh phụ. Demo chỉ chạy đầu ra BEV. Checkpoint concat đời cũ dùng số camera cố định theo trọng số.
 

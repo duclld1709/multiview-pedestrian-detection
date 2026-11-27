@@ -15,11 +15,31 @@ from calib import Camera, Roi, load_calibration
 
 
 CHECKPOINTS = {
-    'wavetrack': 'wavetrack_best.pt',
-    'wildtrack': 'bevnet_wildtrack.pt',
-    'multiviewx': 'bevnet_multiviewx.pt',
+    'wavetrack': 'wavetrack_lite.pt',
+    'wildtrack': 'wildtrack_lite.pt',
+    'multiviewx': 'multiviewx_lite.pt',
 }
 LABELS = {'wavetrack': 'WaveTrack', 'wildtrack': 'Wildtrack', 'multiviewx': 'MultiviewX'}
+
+
+def checkpoint_dataset(name):
+    """Recognize native and lite checkpoint names without loading their tensors."""
+    for key, canonical in CHECKPOINTS.items():
+        if name in (canonical, f'{key}_lite.pt', f'bevnet_{key}_lite.pt'):
+            return key
+    return None
+
+
+def default_checkpoint(root, key):
+    candidates = [CHECKPOINTS[key], f'{key}_lite.pt', f'bevnet_{key}_lite.pt']
+    if key != 'wavetrack':
+        candidates.extend((CHECKPOINTS['wavetrack'], 'wavetrack_lite.pt', 'bevnet_wavetrack_lite.pt'))
+    for name in candidates:
+        if (Path(root) / 'checkpoints' / name).is_file():
+            return name
+    raise ValueError(f'No checkpoint for {LABELS[key]}. Add one of: {", ".join(candidates)} to checkpoints/.')
+
+
 BENCHMARKS = {
     'wildtrack': (('CVLab1', 'CVLab2', 'CVLab3', 'CVLab4', 'IDIAP1', 'IDIAP2', 'IDIAP3'),
                   'intrinsic_zero', .01, (-3, -9, 9, 27), 10),

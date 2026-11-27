@@ -20,7 +20,7 @@ from multiview_detector.models.checkpoint import load_bevnet, load_checkpoint
 from multiview_detector.utils.heatmap import decode
 from multiview_detector.utils.projection import camera_grids
 from realtime_demo.cache import CACHE_FPS, MAX_CACHE_BYTES, FrameCache, atomic_json
-from realtime_demo.datasets import CHECKPOINTS
+from realtime_demo.datasets import CHECKPOINTS, checkpoint_dataset, default_checkpoint
 from realtime_demo.device import inference_device
 from realtime_demo.full_cache import CacheCancelled, FullFrameCache, available_cache
 from realtime_demo.video_source import Mp4Source, direct_source
@@ -154,10 +154,7 @@ class Engine:
 
     @property
     def default_checkpoint(self):
-        if self.dataset:
-            native = CHECKPOINTS[self.dataset.key]
-            return native if (self.root / 'checkpoints' / native).is_file() else CHECKPOINTS['wavetrack']
-        return CHECKPOINTS['wavetrack']
+        return default_checkpoint(self.root, self.dataset.key if self.dataset else 'wavetrack')
 
     def load(self, name):
         if not self.session or name not in self.checkpoints():
@@ -165,7 +162,8 @@ class Engine:
         def work():
             device = inference_device()
             ckpt = load_checkpoint(self.root / 'checkpoints' / name)
-            transfer = bool(self.dataset and self.dataset.key != 'wavetrack' and name != CHECKPOINTS[self.dataset.key])
+            origin = checkpoint_dataset(name)
+            transfer = bool(self.dataset and origin != self.dataset.key)
             model, grid = load_bevnet(ckpt, device, roi=self.roi if self.dataset else None,
                                      view_count=len(self.cams), foreign=transfer)
             size = tuple(self.requested_size or ckpt['img_size'])

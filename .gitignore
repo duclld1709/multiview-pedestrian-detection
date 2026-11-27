@@ -22,6 +22,7 @@ env/
 # Local demo data, frame caches and generated outputs
 /data/
 /Dataset/
+/.mvpd-dataset-download/
 /realtime_demo/cache_data/
 /outputs/
 **/outputs/

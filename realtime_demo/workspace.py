@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Lock, RLock
 
 from realtime_demo.cache import atomic_json
-from realtime_demo.datasets import CHECKPOINTS, LABELS, scan_datasets
+from realtime_demo.datasets import LABELS, checkpoint_dataset, scan_datasets
 from realtime_demo.engine import Conflict, Engine
 
 
@@ -116,7 +116,7 @@ class Workspace:
                 cache_media=dict(kind=media.kind, fps=media.fps, total=media.count,
                                  cameras=len(dataset.cams)) if media else None,
                 using_wave_weights=bool(self.active and self.active != 'wavetrack'
-                                        and value['checkpoint'] == CHECKPOINTS['wavetrack']),
+                                        and checkpoint_dataset(value['checkpoint']) == 'wavetrack'),
             )
             return value
 
